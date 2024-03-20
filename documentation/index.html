@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hackathon | Invite</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="./public/assets/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="./public/assets/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="./public/assets/favicon-16x16.png"
+    />
+    <link rel="manifest" href="./public/assets/site.webmanifest" />
+    <link href="https://fonts.cdnfonts.com/css/noto-sans" rel="stylesheet" />
+    <link rel="stylesheet" href="./public/css/styles.css" />
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="invite-card-header">
+        <div class="invite-card-header-logo">
+          <a href="guide.html">
+            <img
+              class="logo-image"
+              alt="cropwise-logo"
+              src="./public/assets/cropwise-logo.svg"
+            />
+          </a>
+        </div>
+        <lottie-player
+          class="invite-card-header-animation"
+          loop
+          autoplay
+          mode="normal"
+          src="./public/assets/animation.json"
+        >
+        </lottie-player>
+        <div class="invite-card-header-info">
+          <strong>Join Start Global Hackathon! </strong>
+          <p>To: Hackathon Syngenta 2024</p>
+        </div>
+      </div>
+      <div class="invite-card-footer">
+        <form class="invite-card-footer-form" id="inputForm">
+          <label for="email" class="email-input-label"
+            >What is your email address?</label
+          >
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="Email address"
+            required
+          />
+          <p>
+            Members of the same group will be granted with same permissions.
+          </p>
+          <div class="invite-card-select-input-container">
+            <label for="group-select" class="group-select-label"
+              >Select your group:</label
+            >
+            <select name="group" id="group-select"></select>
+          </div>
+          <input type="submit" value="Join group" id="submitBtn" />
+        </form>
+      </div>
+    </div>
+    <div id="popup" class="popup hidden">
+      <div class="popup-container">
+        <h3 id="popupTitle" class="hidden">Invite sent!</h3>
+        <p id="popupDescription">
+          You will receive access to the property in few minutes!
+        </p>
+        <p id="popupGuideDescription" class="hidden">
+          Visit our guide page to discover essential information that will guide
+          you along the process.
+        </p>
+        <button id="popupCloseBtn">OK</button>
+      </div>
+    </div>
+  </body>
+  <script>
+    const selectElement = document.getElementById("group-select");
+
+    Array.from({ length: 50 }, (_, i) => i + 1).forEach((element) => {
+      const optionElement = document.createElement("option");
+      optionElement.value = `${element}`;
+      optionElement.textContent = `Group ${element}`;
+      selectElement.appendChild(optionElement);
+    });
+
+    const form = document.querySelector("#inputForm");
+
+    function sendData() {
+      const email = document.getElementById("email").value;
+      const group = document.getElementById("group-select").value;
+
+      const invitationEndpoint = `https://vqq2so6q6l.execute-api.us-west-2.amazonaws.com/dev/hackathon/groups/${group}/join`;
+
+      fetch(invitationEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, group }),
+      }).then((response) => {
+        if (response.status === 200) {
+          showPopup({
+            title: "You're almost there!",
+            description: `Now check your email for the confirmation link, and follow the steps to create your Cropwise Account! Remember that you can add Fields to your Farm using Farm Settings <a href="https://app.cropwise.com">(https://app.cropwise.com/)</a>`,
+            buttonText: "Got it",
+          });
+        } else {
+          showPopup({
+            description: "Sorry, we had a problem. Please try again later.",
+            buttonText: "OK",
+          });
+        }
+      });
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      sendData();
+    });
+
+    document.getElementById("email").addEventListener("keyup", (event) => {
+      const submitBtn = document.getElementById("submitBtn");
+
+      if (event.target?.value) {
+        submitBtn.classList.add("submit-button-enabled");
+      } else {
+        submitBtn.classList.remove("submit-button-enabled");
+      }
+    });
+
+    document
+      .getElementById("popupCloseBtn")
+      .addEventListener("click", hidePopup);
+
+    function hidePopup() {
+      const popup = document.getElementById("popup");
+      const popupTitle = document.getElementById("popupTitle");
+      const popupGuideDescription = document.getElementById(
+        "popupGuideDescription"
+      );
+
+      if (!popupGuideDescription.classList.contains("hidden")) {
+        window.open(
+          "https://syngenta.github.io/syngenta-start-global-hackathon-2024/guide.html",
+          "_blank"
+        );
+      }
+
+      popupGuideDescription.classList.add("hidden");
+      popupTitle.classList.add("hidden");
+      popup.classList.add("hidden");
+    }
+
+    function showPopup(params) {
+      const { title, description, buttonText } = params;
+
+      if (title) {
+        const popupTitle = document.getElementById("popupTitle");
+        const popupGuideDescription = document.getElementById(
+          "popupGuideDescription"
+        );
+
+        popupTitle.innerHTML = title;
+        popupTitle.classList.remove("hidden");
+        popupGuideDescription.classList.remove("hidden");
+      }
+
+      const popup = document.getElementById("popup");
+      const popupDescription = document.getElementById("popupDescription");
+      const popupCloseBtn = document.getElementById("popupCloseBtn");
+
+      popupCloseBtn.innerHTML = buttonText;
+      popupDescription.innerHTML = description;
+      popup.classList.remove("hidden");
+    }
+  </script>
+</html>

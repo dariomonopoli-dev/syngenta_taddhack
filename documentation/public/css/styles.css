@@ -1,0 +1,247 @@
+/* Reset */
+
+html {
+  box-sizing: border-box;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+ol,
+ul {
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+  font-family: "Noto Sans";
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Styles */
+
+body {
+  position: relative;
+  height: 100vh;
+}
+
+a {
+  color: #14803c;
+}
+
+.wrapper {
+  height: 100%;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 100%;
+  grid-template-rows: 1fr 1fr;
+}
+
+.invite-card-header {
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: linear-gradient(183.3deg, #00004b -53.79%, #369f61 99.29%);
+}
+
+.invite-card-header-animation {
+  transform: translateY(2px);
+  width: 100%;
+  max-width: 608px;
+  height: auto;
+}
+
+.invite-card-header-info {
+  background-color: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 20px 20px 8px 20px;
+  width: 100%;
+}
+
+.invite-card-header-info > strong {
+  font-size: 20px;
+  line-height: 26px;
+}
+
+.invite-card-header-info > p {
+  font-size: 14px;
+  color: rgb(105, 111, 136);
+}
+
+.invite-card-footer {
+  background-color: #fff;
+  padding: 0 16px;
+}
+
+.invite-card-footer-form {
+  margin: 0 auto;
+  padding: 20px 20px 0 20px;
+  width: 100%;
+}
+
+.invite-card-footer-form > label.email-input-label {
+  display: block;
+  font-size: 14px;
+}
+
+.invite-card-footer-form input[type="email"] {
+  width: 100%;
+  margin-top: 16px;
+  height: 40px;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #e8eaed;
+  background-color: #f5f8fc;
+}
+
+.invite-card-footer-form > p {
+  margin: 12px 0 16px 0;
+  text-align: center;
+  font-size: 14px;
+  color: rgb(105, 111, 136);
+}
+
+.invite-card-select-input-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.invite-card-select-input-container > label.group-select-label {
+  font-size: 14px;
+}
+
+.invite-card-select-input-container > select {
+  height: 36px;
+  width: 140px;
+
+  border: unset;
+  background-color: #14803c;
+  border-radius: 4px;
+
+  color: #fff;
+
+  padding-left: 12px;
+
+  appearance: none;
+  background-image: url("../assets/arrow.svg");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem top 50%;
+  background-size: 0.65rem auto;
+}
+
+.invite-card-footer-form input[type="submit"] {
+  width: 100%;
+  margin-top: 20px;
+  height: 40px;
+  font-size: 16px;
+  border-radius: 4px;
+  border: 1px solid #e8eaed;
+  background-color: #f5f8fc;
+  color: rgb(105, 111, 136);
+  cursor: pointer;
+}
+
+.invite-card-footer-form input[type="submit"].submit-button-enabled {
+  transition: 200ms ease;
+  background-color: #14803c;
+  color: white;
+}
+
+@media (min-width: 670px) {
+  .invite-card-header-info,
+  .invite-card-footer-form {
+    width: 637px;
+    padding: 0 110px;
+  }
+
+  .invite-card-header-info {
+    padding-top: 40px;
+    padding-bottom: 8px;
+  }
+}
+
+/* Pop-up */
+
+.popup {
+  position: absolute;
+  top: 0px;
+
+  width: 100vw;
+  height: 100vh;
+  background-color: rgb(0, 0, 0, 0.4);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 16px;
+}
+
+.popup.hidden {
+  display: none;
+}
+
+@keyframes show {
+  from {
+    transform: scale(0.8);
+  }
+  to {
+    opacity: scale(1);
+  }
+}
+
+.popup-container {
+  background-color: #fff;
+  padding: 24px;
+  animation: show 400ms ease;
+  display: grid;
+  gap: 8px;
+}
+
+.popup-container > h3 {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.popup-container > h3.hidden {
+  display: none;
+}
+
+.popup-container > p.hidden {
+  display: none;
+}
+
+.popup-container > p {
+  font-size: 14px;
+  max-width: 400px;
+}
+
+.popup-container > button {
+  margin-top: 1rem;
+  border-radius: 4px;
+  background-color: #14803c;
+  color: white;
+  height: 40px;
+  font-size: 16px;
+  border: unset;
+  min-width: 80px;
+  justify-self: end;
+  cursor: pointer;
+}

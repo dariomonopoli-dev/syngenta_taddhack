@@ -1,0 +1,197 @@
+/* Reset */
+.w-button {
+  display: inline-block;
+  padding: 9px 15px;
+  background-color: #3898ec;
+  color: white;
+  border: 0;
+  line-height: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+html {
+  box-sizing: border-box;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+ol,
+ul {
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+  font-family: "Noto Sans";
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Styles */
+
+body {
+  background-color: #232630;
+  color: white;
+}
+
+h1 {
+  margin-top: 0px;
+  margin-bottom: 1rem;
+  font-size: 3.5rem;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+p {
+  margin-bottom: 10px;
+  font-size: 1.3rem;
+  font-weight: 400;
+}
+
+a {
+  color: #f25a4e;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+section {
+  padding-top: 3.5rem;
+  padding-bottom: 5rem;
+}
+
+.button {
+  padding: 1.2rem 2rem;
+  border-radius: 3px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button.hero-button {
+  margin-top: 2.5rem;
+  background-color: #73dc78;
+  color: #1f1235;
+}
+
+.container {
+  width: 90%;
+  max-width: 1040px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-image {
+  width: 132px;
+}
+
+.logo-text {
+  border-left: 1px solid;
+  padding-left: 8px;
+}
+
+.hero {
+  display: flex;
+  margin-top: 5rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hero-content-wrap {
+  width: 40%;
+}
+
+.hero-illy-wrap {
+  width: 80%;
+  height: auto;
+  max-width: 550px;
+}
+
+.image-wrapper > img {
+  display: block;
+  margin: 0 auto;
+}
+
+.footer {
+  display: flex;
+  margin-top: 1.5rem;
+  justify-content: center;
+  padding-bottom: 1.5rem;
+}
+
+@media screen and (max-width: 991px) {
+  h1 {
+    font-size: 3rem;
+  }
+
+  p {
+    font-size: 1.2rem;
+  }
+
+  .button {
+    font-size: 1rem;
+  }
+
+  .hero {
+    flex-direction: column;
+    margin-top: 4rem;
+  }
+
+  .reverse {
+    flex-direction: column-reverse;
+  }
+
+  .hero-content-wrap {
+    width: 100%;
+  }
+
+  .hero-illy-wrap {
+    width: 100%;
+    margin-right: 0rem;
+    margin-bottom: 2.5rem;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  h1 {
+    font-size: 2.7rem;
+  }
+}
+
+@media screen and (max-width: 479px) {
+  .container {
+    width: 85%;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+  }
+
+  p {
+    font-size: 1.1rem;
+  }
+
+  .button {
+    white-space: nowrap;
+  }
+}

@@ -1,0 +1,3263 @@
+openapi: 3.0.0
+info:
+  title: Remote Sensing API
+  version: '2.0'
+  description: |
+    This API offers multiple solutions for remote sensing data analysis.
+    # General Concepts
+    ## Cropwise and authentication
+    For Cropwise-related APIs and authentication, please read these docs: [Cropwise API Docs](https://docs.cropwise.com)
+
+    ## Scenes
+    `Scenes` are products provided by **remote imaging sources**. They represent pictures taken of the land in a top-down point-of-view, usually at high altitudes using drones, airplanes, or satellites, and they are georreferenced.
+    Each scene is composed by 5 main attributes:
+    - `source`: The id of the remote imaging source that produced the scene.
+    - `acquisition_date`: Date when the scene was captured by the remote imaging source.
+    - `bounds`: The georreferenced shape of the scene, represented in `GeoJSON` structure.
+    - `bands`:  Data representation of the scene from a frequency or analytical perspective. Scenes can have multiple bands for different color frequencies or even bands with pre-processed data.
+    - `metadata`: Extra information about the scene provided by the satellite source. Example: estimated cloud coverage.
+    Once a scene is acquired and it gets ingested into our processing pipelines, it becomes available to be fetched through the scenes APIs.
+    *Note:* some satellite sources might be private, so their availability may be subject to the requester current license.
+    ## AOIs
+    `AOI`, Area of Interest, is portion of map that represents a geometry or set of geometries.
+    The AOIs representation should always come in pairs:
+    - `{AOI_ID}`: It may mean the Cropwise Field ID, Geometry Hash ID, or Cropwise Property ID
+    - `{AOI_TYPE}`: Can be: `field`, `property`, `composite_property` or `hash`.
+    ## Images
+    `Images` are a combination of `scenes` and `AOIs`. They represent a scene that has been clipped in the shape of the AOI geometry.
+    ## Subproducts
+    Since images have all attributes of a scene, but limited to an AOI geometry, the bands available and be processed in order to produce subproducts.
+    `Subproducts` are a transformation of existing bands of a scene into a visual or matrix representation. This, for example, could be an `NDVI` representation, which highlights living vegetation by using how much plants absorb red wavelength frequencies.
+    *Note:* Subproducts availability may be subject to the available bands of an image.
+    ### Dynamic band expressions
+    Some `subproducts` analysis can be done at runtime using **dynamic band expressions** or `dbx`. These are equations that take existing bands as input and produces one other band as output. This output can be exported in multiple formats, such as `.png`, `.tiff`, `.jpeg`.
+    ### Raster Types
+    The `rastertype` are the palettes used to visualize the images requested. They are used in the images after the `subproduct` has been applied on.
+
+    | Raster Type  | Palette | Min and Max Values |
+    | ------ | ------ |------ |
+    | multicolor  | ![Multicolor](https://docs.imagery.cropwise.com/imagery-platform-api/multicolor.png) | -1 to 1 |
+    | falsecolor | ![Falsecolor](https://docs.imagery.cropwise.com/imagery-platform-api/falsecolor.png) | -1 to 1 |
+    | falsecolor_alt_3 | ![Falsecolor_Alt_3](https://docs.imagery.cropwise.com/imagery-platform-api/falsecolor_alt_3.png) | -1 to 1 |
+    | falsecolor_alt_4 |  ![Falsecolor_Alt_4](https://docs.imagery.cropwise.com/imagery-platform-api/falsecolor_alt_4.png) | -1 to 1 |
+    | falsecolor_alt_5 |  ![Falsecolor_Alt_5](https://docs.imagery.cropwise.com/imagery-platform-api/falsecolor_alt_5.png) | -1 to 1 |
+    | falsecolor_alt_6 |  ![Falsecolor_Alt_6](https://docs.imagery.cropwise.com/imagery-platform-api/falsecolor_alt_6.png) | -1 to 1 |
+    | falsecolor_alt_8 |  ![Falsecolor_Alt_8](https://docs.imagery.cropwise.com/imagery-platform-api/falsecolor_alt_8.png) | -1 to 1 |
+    | falsecolor_alt_10 |  ![Falsecolor_Alt_10](https://docs.imagery.cropwise.com/imagery-platform-api/falsecolor_alt_10.png) | -1 to 1 |
+
+    ## Tiles
+    `Tiles` should not be confused with `scenes`. Tiles are map layer representations of `images` and `subproducts`, sliced in a `{z}/{x}/{y}` grid. They are usually integrated with Map rendering tools like *Mapbox* or *Google Maps*.
+
+    ## Error Handling
+    All error messages should be mapped with error codes.
+    These codes will be at this following format: `E{3 character for context}{3 digit for indexing}`
+
+    | Error Code | Description |
+    | ---- | ---- |
+    | ESNF001 |  Scene ID not found |
+    | EMNF002 |  Image/Field ID not found |
+    | EMNF003 |  Registry not found for specified AOI |
+    | EMNF004 |  Field not found for for specified ID. Check if the user has access to it or if it exists for that user's workspace |
+    | EMNF005 |  Property not found for specified ID. Check if the user has access to it or if it exists for that user's workspace |
+    | EIRE001 |  Bad Request: Invalid request parameters or request body |
+    | EIRE002 |  Not authorized: User is unauthorized to use this service or is not logged in |
+    | EISE000 |  Internal Server Error: General server-side error, likely with an unknown cause |
+    | EISE001 |  Bad Formating Error: Something is wrong with the format of the request |
+    | EISE002 |  Error Parsing Data: Some data is malformed and the server was unable to parse it properly |
+    | EISE003 |  Not implemented: This functionality is not yet available |
+    | EISE100 |  Service Timeout: An upstream service timed out and the server was unable to recovery |
+    | EISE101 |  Service Unreachable: The server is unable to reach an upstream service and was unable to recovery |
+    | EISE102 |  Service Error: The service was unable to continue due to an error in its execution  |
+    | EISE201 |  Database Timeout: The operation timed out when communicating with the database |
+    | EISE202 |  Database Error: The operation in the database failed and the server was unable to recovery |
+    | EISE203 |  Database Host Error: The server is unable to connect to the database host  |
+  contact:
+    name: Syngenta Digital
+    email: caiubi.fonseca@syngenta.com
+    url: 'https://www.syngenta.com.br/syngenta-digital'
+  license:
+    name: All rights reserved
+    url: none
+servers:
+  - url: 'https://api.dev.remote-sensing.cropwise.com'
+    description: dev
+  - url: 'https://api.staging.remote-sensing.cropwise.com'
+    description: staging
+  - url: 'https://api.remote-sensing.cropwise.com'
+    description: prod
+  - url: 'http://localhost'
+    description: localhost
+  - url: 'http://localhost:8080'
+    description: localhost port 8080
+tags:
+  - name: Registries
+    description: |
+      Edit and review configuration for specific areas of interest,
+      changing the sources available for them.
+    externalDocs:
+      url: 'https://...'
+  - name: Masks
+    description: |
+      Masks utilized for defining the geometry utilized by different sources
+      to create images.
+    externalDocs:
+      url: 'https://...'
+  - name: Aois
+    description: Areas of interest.
+    externalDocs:
+      url: 'https://...'
+  - name: Images
+    description: |
+      Final product for areas of interest.
+    externalDocs:
+      url: 'https://...'
+  - name: Downloads
+    description: |
+      Request and search downloads of images bundles for an User.
+    externalDocs:
+      url: 'https://...'
+  - name: Rasters
+    description: |
+      Sub-product from images, in various formats.
+    externalDocs:
+      url: 'https://...'
+  - name: Tiles
+    description: |
+      Follows TMS/ZXY format for providing map tiles.
+    externalDocs:
+      url: 'https://...'
+  - name: Scenes
+    description: |
+      Information of the scenes sourced to create images.
+    externalDocs:
+      url: 'https://...'
+  - name: GeoJSON
+    description: |
+      This documentation follows a subset of the standard implementation of geometry in JSON format.
+      Imagery only accepts polygons and multi-polygons, they may have any number of internal rings (holes).
+      The precision we use for geometries is up to 7 decimal places. Anything more than that is rounded up, which may cause points that are too close to overlap, causing geometries to be invalidated.
+      A geometry is considered invalid if it is open, if it has overlaps, if it self-intersects, and if two or more coordinates are in the exact same place.
+    externalDocs:
+      url: 'https://github.com/geojson/schema'
+  - name: Prescriptions
+    description: |
+      Information of a detailed plan/recommendation created to optimize the use of resources such as fertilizers, pesticides, irrigation, and planting techniques based on precise data analysis, aiming to enhance crop yield, soil health, and sustainability.
+    externalDocs:
+      url: 'https://...'
+paths:
+  /registries:
+    parameters: []
+    put:
+      summary: PUT /registries
+      operationId: imagery_platform.registries.endpoints.edit_aoi_registry
+      responses:
+        '200':
+          description: OK
+      x-internal: true
+      description: Changes the settings of one or more Area of Interest.
+      requestBody:
+        $ref: '#/components/requestBodies/AoiSettingsRequest'
+      tags:
+        - Registries
+  '/registries/{aoi_id}':
+    parameters:
+      - $ref: '#/components/parameters/aoi_id'
+    get:
+      summary: 'GET /registries/{aoi_id}'
+      responses:
+        '200':
+          $ref: '#/components/responses/AoiResponse'
+      operationId: imagery_platform.registries.endpoints.get_aoi_on_registry
+      x-internal: true
+      description: Return the settings of a specific Area of Interest.
+      parameters: []
+      tags:
+        - Registries
+  '/registries/aois/{aoi_type}/{id}':
+    get:
+      summary: 'GET /registries/aois/{aoi_type}/{id}'
+      responses:
+        '200':
+          $ref: '#/components/responses/AoisPageResponse'
+      operationId: imagery_platform.registries.endpoints.get_aois_by_type_and_id
+      parameters: []
+      description: |-
+        Return the settings of one or more Area of Interest.
+        ## Accessing settings of different AOI types:
+        There are multiple AOI types which you can select, each will return a broader set of information for each field pertaining to that type:
+        - **field**: When accessing the information of an Area of Interest that is a *field* it will retrieve just the present configuration for that field.
+        - **region**: When accessing the information of an Area of Interest that is a *region* it will retrieve the present configuration for all fields of the region.
+        - **property**: When accessing the information of an Area of Interest that is a *property* it will retrieve the present configuration for all fields of the property.
+      tags:
+        - Registries
+      x-internal: true
+    parameters:
+      - $ref: '#/components/parameters/id'
+      - $ref: '#/components/parameters/aoi_type'
+  '/registries/property/{p_id}/mask':
+    parameters:
+      - $ref: '#/components/parameters/p_id'
+    get:
+      summary: 'GET /registries/property/{p_id}/mask'
+      responses:
+        '200':
+          $ref: '#/components/responses/MaskResponse'
+      operationId: imagery_platform.registries.endpoints.get_property_fixed_mask
+      description: Return the registered mask for Property.
+      tags:
+        - Aois
+      x-internal: true
+    post:
+      summary: 'POST /aois/property/{p_id}/mask'
+      operationId: imagery_platform.registries.endpoints.post_aois_property_id_mask
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request
+      description: |
+        Post a new polygon as the mask for Property.
+        A mask is used to define which parts of the property are eligible (or licensed) to be sourced with high-definition images.
+        This allows the user to chage the boundaries of the areas of interest freelly, without affecting their current subscription to any high-definition source providers we offer.
+        This mask's geometry has a hard limit of 500 vertices.
+      tags:
+        - Aois
+      requestBody:
+        $ref: '#/components/requestBodies/PropertyMaskRequest'
+      x-internal: true
+    delete:
+      summary: 'DELETE /registries/property/{p_id}/mask'
+      operationId: imagery_platform.registries.endpoints.delete_aois_property_id_mask
+      responses:
+        '200':
+          description: OK
+      description: 'Delete the property mask, this will disable the sourcing of new images from sources that require the mask.'
+      tags:
+        - Aois
+      x-internal: true
+    put:
+      summary: 'PUT /registries/property/{p_id}/mask'
+      operationId: imagery_platform.registries.endpoints.put_aois_property_id_mask
+      responses:
+        '200':
+          description: OK
+      description: Put a new polygon to substitute the polygon as the mask for Property.
+      tags:
+        - Aois
+      requestBody:
+        $ref: '#/components/requestBodies/PropertyMaskRequest'
+      x-internal: true
+  '/registries/property/{p_id}/{masks}':
+    parameters:
+      - $ref: '#/components/parameters/masks'
+      - $ref: '#/components/parameters/p_id'
+    get:
+      summary: 'GET /registries/property/{p_id}/{masks}'
+      responses:
+        '200':
+          $ref: '#/components/responses/MaskResponse'
+      operationId: imagery_platform.registires.endpoints.get_property_auto_masks
+      description: |-
+        Retrieves the automatically generated masks for the property.
+        ## Mask types:
+        ### bcpl:
+        Bounding Convex Polygon, it is a single polygon that wraps around the boundaries of the property.
+        ### bbox:
+        Bounding Box, it is a single rectangle, square to mercator grid, which envelopes all boundaries of the property.
+      parameters:
+        - $ref: '#/components/parameters/as_of'
+      tags:
+        - Aois
+      x-internal: true
+  /aois/images:
+    get:
+      summary: List images by AOI
+      responses:
+        '200':
+          $ref: '#/components/responses/ImagesPageResponse'
+      operationId: imagery_platform.images.endpoints.get_images_from_aoi_id
+      description: |-
+        Retrieves a list of images available for the given AOI.
+
+        ### Which AOI type should I use?
+        There are multiple AOI types which you can select, each will return a set of images composed and grouped by the AOI level you selected:
+        - **composite_property** (most used): The resulting page is a list of **property level** images, each one is composed of smaller field level images.
+        - **composite_region**: The resulting page is a list of **region level** images, each one is composed of smaller field level images.
+        - **field**: The resulting page is a list of **field level** images (only for the given field id).
+        - **property**: The resulting page is a list of **field level** images (for all fields of the given property id).
+      parameters:
+        - $ref: '#/components/parameters/start_date'
+        - $ref: '#/components/parameters/end_date'
+        - $ref: '#/components/parameters/as_of'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/cursor'
+        - $ref: '#/components/parameters/ref_type'
+        - $ref: '#/components/parameters/uid'
+        - $ref: '#/components/parameters/sources'
+        - $ref: '#/components/parameters/scenes'
+        - $ref: '#/components/parameters/add_scene_bounds'
+        - $ref: '#/components/parameters/exclude'
+        - $ref: '#/components/parameters/cloud_coverage_lt_eq'
+      tags:
+        - Images
+  '/aois/images/{sub_product}':
+    parameters:
+      - $ref: '#/components/parameters/sub_product'
+    get:
+      summary: 'GET /aois/images/{sub_product}'
+      responses:
+        '200':
+          $ref: '#/components/responses/SubProductsPaginatedResponse'
+      operationId: imagery_platform.images.endpoints.get_aois_sub_products
+      description: |-
+        Access the paginated list of images for all **individual fields** inside the *AOI*.
+        ## Accessing images with different AOI types:
+        There are multiple AOI classes which you can select, each will return a broader set of images for each field pertaining to that class:
+        - **field**: When accessing the paginated list of images of a *field* it will retrieve the images present for that field.
+        - **region**: When accessing the paginated list of images of a *region* it will retrieve the images present for all fields that are part of that field group.
+        - **property**: When accessing the paginated list of images of a *property* it will retrieve the images present for all fields that are part of that property.
+      parameters:
+        - $ref: '#/components/parameters/start_date'
+        - $ref: '#/components/parameters/end_date'
+        - $ref: '#/components/parameters/as_of'
+        - $ref: '#/components/parameters/cursor'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/uid'
+        - $ref: '#/components/parameters/ref_type'
+        - $ref: '#/components/parameters/dynamic_band_expression'
+        - $ref: '#/components/parameters/sources'
+        - $ref: '#/components/parameters/scenes'
+        - $ref: '#/components/parameters/cloud_coverage_lt_eq'
+      tags:
+        - Images
+      x-internal: true
+  /aois/stats:
+    get:
+      summary: List Field Time Series By Source
+      description: |-
+        List of stats by every processed image from field. It contains information | about cloud coverage, histogram min max and ndvi analysis.
+        > *Note:* Only available date interval of 62 days for each request.
+      tags:
+        - Images
+      responses:
+        '200':
+          $ref: '#/components/responses/AoiStatsResponse'
+      operationId: imagery_platform.images.endpoints.get_stats_for_field
+      parameters:
+        - $ref: '#/components/parameters/field_id'
+        - $ref: '#/components/parameters/start_date'
+        - $ref: '#/components/parameters/end_date'
+        - $ref: '#/components/parameters/source'
+        - $ref: '#/components/parameters/cloud_coverage_lt_eq'
+  '/aois/images/{sub_product}/{sub_resource}':
+    parameters:
+      - $ref: '#/components/parameters/sub_product'
+      - $ref: '#/components/parameters/sub_resource'
+    get:
+      summary: 'GET /aois/images/{sub_product}/{sub_resource}'
+      responses:
+        '200':
+          $ref: '#/components/responses/SubResourceResponse'
+      operationId: imagery_platform.images.endpoints.get_sub_resources_for_aoi
+      description: |-
+        Access the paginated list of images for all **individual fields** inside the *AOI*.
+
+        *Note:* recently modified fields will not immediately show updated values for the given sub_resource. Please allow 24 hours for these values to update.
+
+        ## AOI types:
+        There are multiple AOI classes which you can select, each will return a broader set of images for each field pertaining to that class:
+        - **field**: When accessing the paginated list of images of a *field* it will retrieve the images present for that field.
+        - **region**: When accessing the paginated list of images of a *region* it will retrieve the images present for all fields that are part of that field group.
+        - **property**: When accessing the paginated list of images of a *property* it will retrieve the images present for all fields that are part of that property.
+
+        ## Sub-Resources
+
+        Returns a sub-resource of a sub-product.
+
+        **sub_resource options:**
+          - `stats`: a temporal set of statistics (a **time series**) for a given AOI over the specified date range.
+      parameters:
+        - $ref: '#/components/parameters/start_date'
+        - $ref: '#/components/parameters/end_date'
+        - $ref: '#/components/parameters/as_of'
+        - $ref: '#/components/parameters/cursor'
+        - $ref: '#/components/parameters/uid'
+        - $ref: '#/components/parameters/ref_type'
+        - $ref: '#/components/parameters/dynamic_band_expression'
+        - $ref: '#/components/parameters/sources'
+        - $ref: '#/components/parameters/bins'
+        - $ref: '#/components/parameters/scenes'
+        - $ref: '#/components/parameters/cloud_coverage_lt_eq'
+      tags:
+        - Images
+      x-internal: true
+  /images/zones/export:
+    parameters:
+      - $ref: '#/components/parameters/nonce'
+    post:
+      summary: Generate and export prescription zones for requested images
+      operationId: imagery_platform.images.endpoints.zoned_image_export
+      responses:
+        '200':
+          description: OK
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+      tags:
+        - Images
+      description: Export zoned map to requested file
+      parameters: []
+      requestBody:
+        $ref: '#/components/requestBodies/ZoneImageExportRequest'
+      x-internal: true
+  '/images/{i_ids}/productivity_map/{raster_type}/tiles/{z}/{x}/{y}/{raster_file_extension}':
+    parameters:
+      - $ref: '#/components/parameters/i_ids'
+      - name: raster_type
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - multicolor
+          default: multicolor
+      - $ref: '#/components/parameters/z'
+      - $ref: '#/components/parameters/x'
+      - $ref: '#/components/parameters/y'
+      - name: raster_file_extension
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - png
+          example: png
+        description: File format extension for raster sub-products
+    get:
+      summary: Get Productivity Map
+      tags:
+        - Images
+        - Tiles
+        - Rasters
+      operationId: imagery_platform.images.endpoints.get_raster_tile_from_productivity_map
+      responses:
+        '200':
+          $ref: '#/components/responses/RasterResponse'
+      description: Create productivity map for images (Only CWO available)
+  '/images/{i_id}':
+    parameters:
+      - $ref: '#/components/parameters/i_id'
+    get:
+      summary: Get Image by ID
+      tags:
+        - Images
+      responses:
+        '200':
+          $ref: '#/components/responses/ImageResponse'
+      operationId: imagery_platform.images.endpoints.get_image_by_id
+      description: Returns an `image`.
+      parameters:
+        - $ref: '#/components/parameters/process_missing_image_cloud_coverage'
+  '/images/{i_id}/{sub_product}':
+    parameters:
+      - name: i_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Image ID
+      - name: sub_product
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - drymatter
+            - shadow_corrected_drymatter
+            - legacy_cloud_shadow
+            - ndvi
+            - savi
+            - rgb
+            - evi
+            - ndwi
+            - ndvig
+            - rvi
+            - arvi
+            - nir
+            - vari
+            - all
+          example: ndvi
+        description: Sub-products generated from this `image`
+    get:
+      summary: Get Subproduct by Image
+      tags:
+        - Images
+      responses:
+        '200':
+          $ref: '#/components/responses/SubProductResponse'
+      operationId: imagery_platform.images.endpoints.get_image_sub_product
+      description: Returns a sub-product of an image.
+      parameters:
+        - $ref: '#/components/parameters/dynamic_band_expression'
+      x-internal: false
+  '/images/{i_id}/{sub_product}/{sub_resource}':
+    parameters:
+      - $ref: '#/components/parameters/i_id'
+      - $ref: '#/components/parameters/sub_product'
+      - $ref: '#/components/parameters/sub_resource'
+    get:
+      summary: Calculate Image Subproduct
+      responses:
+        '200':
+          $ref: '#/components/responses/SubResourceResponse'
+      operationId: imagery_platform.images.endpoints.get_sub_resource_from_image
+      description: Returns a sub-resource of a sub-product.
+      tags:
+        - Images
+      parameters:
+        - $ref: '#/components/parameters/dynamic_band_expression'
+        - $ref: '#/components/parameters/bins'
+      x-internal: false
+  '/images/{i_id}/{sub_product}/{raster_type}/{raster_file_extension}':
+    parameters:
+      - $ref: '#/components/parameters/sub_product'
+      - $ref: '#/components/parameters/raster_type'
+      - $ref: '#/components/parameters/i_id'
+      - $ref: '#/components/parameters/raster_file_extension'
+      - $ref: '#/components/parameters/variability'
+    get:
+      summary: Image Preview
+      responses:
+        '200':
+          $ref: '#/components/responses/RasterResponse'
+      operationId: imagery_platform.images.endpoints.get_sub_product_raster_from_image
+      description: Returns a raster file of a sub-product
+      tags:
+        - Images
+        - Rasters
+      parameters:
+        - $ref: '#/components/parameters/dynamic_band_expression'
+        - $ref: '#/components/parameters/raster_type'
+        - $ref: '#/components/parameters/raster_size'
+        - $ref: '#/components/parameters/upper_left_lon'
+        - $ref: '#/components/parameters/upper_left_lat'
+        - $ref: '#/components/parameters/lower_right_lon'
+        - $ref: '#/components/parameters/lower_right_lat'
+  '/images/{i_id}/{sub_product}/{raster_type}/tiles/{z}/{x}/{y}/{raster_file_extension}':
+    parameters:
+      - $ref: '#/components/parameters/sub_product'
+      - $ref: '#/components/parameters/raster_type'
+      - $ref: '#/components/parameters/z'
+      - $ref: '#/components/parameters/x'
+      - $ref: '#/components/parameters/y'
+      - schema:
+          type: string
+          example: ignore_overview
+          enum:
+            - ignore_overview
+            - only_visible
+        name: options
+        in: query
+        required: false
+        description: Image options
+      - $ref: '#/components/parameters/raster_file_extension'
+      - $ref: '#/components/parameters/i_id'
+    get:
+      summary: Map Tiles Endpoint
+      tags:
+        - Images
+        - Tiles
+        - Rasters
+      responses:
+        '200':
+          $ref: '#/components/responses/RasterResponse'
+      operationId: imagery_platform.images.endpoints.get_raster_tile_from_sub_product_from_image
+      description: Returns a TMS/XYZ tile of a raster file of a sub-product
+      parameters:
+        - $ref: '#/components/parameters/dynamic_band_expression'
+        - $ref: '#/components/parameters/raster_size'
+        - $ref: '#/components/parameters/variability'
+        - $ref: '#/components/parameters/mean_mode'
+        - $ref: '#/components/parameters/session_token'
+        - $ref: '#/components/parameters/bearer_token'
+  '/images/{i_id}/{sub_product}/{raster_type}/tiles_highdpi/{s}/{z}/{x}/{y_highdpi}':
+    parameters:
+      - $ref: '#/components/parameters/sub_product'
+      - $ref: '#/components/parameters/raster_type'
+      - $ref: '#/components/parameters/s'
+      - $ref: '#/components/parameters/z'
+      - $ref: '#/components/parameters/x'
+      - $ref: '#/components/parameters/y_highdpi'
+      - schema:
+          type: string
+          example: ignore_overview
+          enum:
+            - ignore_overview
+            - only_visible
+        name: options
+        in: query
+        required: false
+        description: Image options
+      - $ref: '#/components/parameters/i_id'
+    get:
+      summary: Map Tiles Endpoint with High DPI support
+      tags:
+        - Images
+        - Tiles
+        - Rasters
+      responses:
+        '200':
+          $ref: '#/components/responses/RasterResponse'
+      operationId: imagery_platform.images.endpoints.get_raster_tile_from_sub_product_from_image_with_hidpi_support
+      description: Returns a TMS/XYZ tile of a raster file of a sub-product
+      parameters:
+        - $ref: '#/components/parameters/dynamic_band_expression'
+        - $ref: '#/components/parameters/raster_size'
+        - $ref: '#/components/parameters/variability'
+        - $ref: '#/components/parameters/mean_mode'
+        - $ref: '#/components/parameters/session_token'
+        - $ref: '#/components/parameters/bearer_token'
+  /images_bundle:
+    parameters: []
+    post:
+      summary: POST /images_bundle (request download)
+      tags:
+        - Downloads
+      operationId: imagery_platform.images.endpoints.post_download_request
+      responses:
+        '200':
+          description: OK
+        '501':
+          $ref: '#/components/responses/BaseErrorResponse'
+      description: Create a request to process a download
+      requestBody:
+        $ref: '#/components/requestBodies/DownloadRequestBody'
+      x-internal: true
+  '/images_bundle/{user_id}':
+    parameters:
+      - $ref: '#/components/parameters/user_id'
+    get:
+      summary: 'GET /images_bundle/{user_id}'
+      operationId: imagery_platform.images.endpoints.search_user_downloads
+      tags:
+        - Downloads
+      responses:
+        '200':
+          description: OK
+        '501':
+          $ref: '#/components/responses/BaseErrorResponse'
+      description: Search for requested downloads for user
+      x-internal: true
+  /cache/purge:
+    parameters: []
+    get:
+      summary: GET /cache/purge
+      tags:
+        - Images
+      operationId: imagery_platform.images.endpoints.purge_cache
+      description: Purge cache
+      x-internal: true
+      responses:
+        '200':
+          description: OK
+  /scenes:
+    parameters: []
+    post:
+      summary: POST /scenes (search scenes)
+      operationId: imagery_platform.scenes.endpoints.search_scenes
+      responses:
+        '200':
+          $ref: '#/components/responses/ScenesPageResponse'
+      description: Retrieves a paginated list of scenes for target.
+      tags:
+        - Scenes
+      requestBody:
+        $ref: '#/components/requestBodies/SceneRequest'
+      x-internal: true
+  '/scenes/{sc_id}':
+    parameters:
+      - $ref: '#/components/parameters/sc_id'
+    get:
+      summary: 'GET /scenes/{sc_id}'
+      tags:
+        - Scenes
+      responses:
+        '200':
+          $ref: '#/components/responses/SceneResponse'
+        '404':
+          $ref: '#/components/responses/BaseErrorResponse'
+      operationId: imagery_platform.scenes.endpoints.get_scenes_by_id
+      description: Return a single Scene given its ID.
+      x-internal: true
+components:
+  schemas:
+    PageInfo:
+      title: PageInfo
+      type: object
+      description: Properties of a Page object (minus the contents property).
+      x-examples:
+        example-1:
+          cursor: Y2U5OTUzNjEtYzNmOC00OTdmLTkyNzAtOTAwNDhiZGNkYzFh
+      properties:
+        cursor:
+          type: string
+          description: Cursor to which continue to consume the API
+    Aoi:
+      title: Aoi
+      type: object
+      description: Setup of an Area of Interest and all sources it is currently signed to which will automatically generate images for it.
+      x-examples:
+        example-1:
+          meta_id:
+            id: 497f6eca-6276-4993-bfeb-53cbbbba6f08
+            aoi_type: field
+          aoi_id: f17d8db3-24ec-4b91-99b4-f400cec4dd4e
+          sources:
+            - planet
+      properties:
+        id:
+          type: string
+          description: Cropwise native ID for this area of interest
+        aoi_type:
+          type: string
+          description: 'Type of AOI, if it is a field, a field grou, etc.'
+          enum:
+            - field
+            - field_group
+          example: field
+        aoi_id:
+          type: string
+          format: uuid
+          description: Internal AOI ID
+        sources:
+          type: array
+          description: Sources this AOI is subscribed to will have images automatically processed for them.
+          items: {}
+        created_at:
+          type: string
+          format: date-time
+          description: Date this AOI was created on Imagery
+        last_modified:
+          type: string
+          format: date-time
+          description: Last time this object was modified
+      required:
+        - id
+        - aoi_type
+        - aoi_id
+        - sources
+        - created_at
+        - last_modified
+    SelfLink:
+      title: SelfLink
+      type: object
+      x-examples:
+        example-1:
+          _self:
+            href: images/by-id/1901_0019_2022/ndvi/stat
+            type: GET
+            rel: images
+      description: 'Self link, useful and even necessary for objects that dont have a unique ID to make them acessible through the API.'
+      properties:
+        _self:
+          $ref: '#/components/schemas/Link'
+    Links:
+      title: Links
+      type: object
+      properties:
+        _links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+      x-examples:
+        example-1:
+          _links:
+            - href: string
+              type: string
+              rel: string
+      description: 'Links of functions, collections and resources that are available in for this current object.'
+    EmbeddedResources:
+      title: EmbeddedResources
+      type: object
+      properties:
+        _embedded:
+          $ref: '#/components/schemas/Links'
+      x-examples:
+        example-1:
+          _embedded:
+            _links:
+              - href: string
+                type: string
+                rel: string
+      description: List of links of objects in some way related to the current object.
+    Scene:
+      title: Scene
+      description: 'Scene object, with link to the raw picture (if present/possible).'
+      allOf:
+        - type: object
+          properties:
+            id:
+              type: string
+            center:
+              $ref: '#/components/schemas/Point'
+            geometry:
+              $ref: '#/components/schemas/Geometry'
+            area:
+              type: number
+            acquired_at:
+              type: string
+              format: date-time
+              example: '2021-04-19T22:10:57.000Z'
+            cloud_coverage:
+              type: number
+            source:
+              type: string
+            from_composite_image_id:
+              type: string
+              description: The ID of the Composite Image that this image is contained
+            aoi:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  description: The property ID of the image
+                type:
+                  $ref: '#/components/schemas/ref_type'
+        - $ref: '#/components/schemas/EmbeddedResources'
+      x-examples:
+        example-1:
+          id: string
+          geometry: {}
+          area: 0
+          acquired_at: '2021-04-19T22:10:57.000Z'
+          cloud_coverage: 0
+          source: string
+          _embedded:
+            _links:
+              - href: string
+                type: string
+                rel: string
+    Image:
+      title: Image
+      description: |-
+        Image object, with the basic information about it, like cloud coverage, time it was acquired, last time it was processed. It contains a list of links of sub-resources available for this image.
+        It also contain a list of embedded resources of AOIs it is related to, and Scenes it is related to.
+      allOf:
+        - properties:
+            id:
+              type: string
+              description: ID of the Image
+            acquired_at:
+              type: string
+              format: date-time
+              description: Date when the source was acquired
+            scene_cloud_coverage:
+              type: number
+              description: Average cloud coverage of all scenes
+            image_cloud_coverage:
+              type: number
+              description: Average cloud coverage considering only the final area
+            last_processed_at:
+              type: string
+              description: Last time this image was processed
+              format: date-time
+            scenes:
+              type: array
+              description: List of IDs of all the scenes that were used to compose this image
+              items:
+                type: string
+            sub_products:
+              type: array
+              items:
+                type: string
+            from_composite_image_id:
+              type: string
+              description: The ID of the Composite Image that this image is contained if it's a Composite Image.
+            composed_of:
+              description: Image IDs that compose this Composite Image
+              type: object
+              additionalProperties:
+                type: string
+      x-examples:
+        example-1:
+          id: string
+          acquired_at: '2019-08-24T14:15:22Z'
+          scene_cloud_coverage: 0
+          image_cloud_coverage: 0
+          last_processed_at: '2019-08-24T14:15:22Z'
+          scenes:
+            - string
+          sub_products:
+            - string
+          from_composite_image_id: string
+          composed_of:
+            property1: string
+            property2: string
+      type: object
+    Stats:
+      title: Stats
+      type: object
+      x-stoplight:
+        id: vmqme8b6lyatr
+      x-tags:
+        - Aois
+        - Images
+      x-examples:
+        Stats Response Example:
+          - mean: 0.8192018481544114
+            stdev: 0.026559578456752834
+            max: 0.865317244063838
+            min: 0.508633243187019
+            scene_cloud_coverage: 0.07
+            image_cloud_coverage: null
+            acquired_at: '2022-03-02T12:24:22Z'
+            image_id: FSCI__20220302_122422_96_2453__FSCI0352800c790a761a882e54ddeb6f0948
+            source: planet
+            sub_product: ndvi
+      description: Stats Response object for a single AOI.
+      properties:
+        field_id:
+          type: array
+          items:
+            allOf:
+              - properties:
+                  mean:
+                    type: number
+                  stdev:
+                    type: number
+                  max:
+                    type: number
+                  min:
+                    type: number
+                  scene_cloud_coverage:
+                    type: number
+                    format: float
+                  acquired_at:
+                    type: string
+                  image_id:
+                    type: string
+                  source:
+                    type: string
+                  sub_product:
+                    type: string
+                  image_cloud_coverage:
+                    type: number
+                    format: float
+                required:
+                  - mean
+                  - stdev
+                  - max
+                  - min
+                  - scene_cloud_coverage
+                  - acquired_at
+                  - image_id
+                  - source
+                  - sub_product
+            type: object
+    ref_type:
+      title: aoi_type
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - property
+            - hash
+            - field
+            - composite_property
+            - region
+            - composite_region
+          example: property
+      description: A type of area of interest
+    Histogram:
+      title: Histogram
+      allOf:
+        - properties:
+            bins:
+              type: array
+              description: 'Bins '
+              items:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  starts_at:
+                    type: number
+                  ends_at:
+                    type: number
+                required:
+                  - count
+                  - starts_at
+                  - ends_at
+            max:
+              type: number
+            min:
+              type: number
+            mean:
+              type: number
+            std_dev:
+              type: number
+            calculated_max:
+              type: number
+            calculated_min:
+              type: number
+          required:
+            - bins
+            - max
+            - min
+            - mean
+            - std_dev
+      description: 'Histogram of a sub-product, the values are distributed on bins.'
+      type: object
+    Link:
+      title: Link
+      type: object
+      properties:
+        href:
+          type: string
+        type:
+          type: string
+          enum:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+          example: GET
+        rel:
+          type: string
+      required:
+        - href
+        - type
+        - rel
+      description: HATEOAS compliant link format.
+    SceneRequest:
+      title: SceneRequest
+      type: object
+      x-examples:
+        example-1:
+          target:
+            aoi_id: f17d8db3-24ec-4b91-99b4-f400cec4dd4e
+            aoi_type: property
+            as_of: '2019-08-24T14:15:22Z'
+          date_window:
+            start_date: '2019-08-24T14:15:22Z'
+            end_date: '2019-08-24T14:15:22Z'
+          pageable:
+            cursor: Y2U5OTUzNjEtYzNmOC00OTdmLTkyNzAtOTAwNDhiZGNkYzFh
+            size: 150
+            sort:
+              - acquired_at
+      properties:
+        sources:
+          type: array
+          items:
+            type: string
+        target:
+          oneOf:
+            - $ref: '#/components/schemas/AoiTarget'
+            - $ref: '#/components/schemas/BoundingBoxTarget'
+        date_window:
+          $ref: '#/components/schemas/DateWindow'
+        pageable:
+          $ref: '#/components/schemas/Pageable'
+      required:
+        - date_window
+        - pageable
+      description: Object to query scenes.
+    DownloadRequest:
+      title: DownloadRequest
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        property_id:
+          type: string
+          format: uuid
+        start_date:
+          type: string
+          format: date
+          example: '2023-01-01'
+        end_date:
+          type: string
+          format: date
+          example: '2023-01-04'
+        raster_size:
+          type: integer
+          example: 256
+        raster_type:
+          type: string
+          enum:
+            - truecolor
+            - falsecolor
+            - falsecolor_alt_3
+            - falsecolor_alt_4
+            - falsecolor_alt_5
+            - falsecolor_alt_6
+            - falsecolor_alt_8
+            - falsecolor_alt_10
+            - falsecolor_alt_11
+            - multicolor
+            - raw
+            - bw
+            - highcontrast
+          example: falsecolor
+        sub_product:
+          type: string
+          enum:
+            - drymatter
+            - shadow_corrected_drymatter
+            - legacy_cloud_shadow
+            - ndvi
+            - savi
+            - rgb
+            - evi
+            - ndwi
+            - ndvig
+            - rvi
+            - arvi
+            - nir
+            - vari
+            - raw
+            - custom
+          example: ndvi
+        scenes:
+          type: array
+          items:
+            type: string
+          example:
+            - SCENE1
+            - SCENE2
+        type:
+          type: string
+          enum:
+            - png
+            - jpeg
+            - tiff
+            - webp
+            - tiles
+          example: png
+        raster_params:
+          $ref: '#/components/schemas/DeprecatedRasterParams'
+      required:
+        - user_id
+        - property_id
+        - start_date
+        - end_date
+        - raster_type
+        - scenes
+        - type
+        - sub_product
+    CreateDownloadRequest:
+      type: object
+      title: CreateDownloadRequest
+      properties:
+        aoi:
+          $ref: '#/components/schemas/AoiTarget'
+        filter:
+          anyOf:
+            - $ref: '#/components/schemas/MetadataFilter'
+            - $ref: '#/components/schemas/SceneIdsFilter'
+        raster_params:
+          $ref: '#/components/schemas/RasterParams'
+        download_params:
+          anyOf:
+            - $ref: '#/components/schemas/MBTilesDownloadParams'
+            - $ref: '#/components/schemas/BundleDownloadParams'
+            - $ref: '#/components/schemas/ProcessDrymatterLuminanceThresholdParams'
+      required:
+        - aoi
+        - download_params
+    ProductivityMapCreateBody:
+      type: object
+      title: ProductivityMapRequestBody
+      properties:
+        field_id:
+          type: string
+        property_id:
+          type: string
+        image_ids:
+          type: array
+          items:
+            type: string
+          example:
+            - CWOF_s2b_20230628_790866_F_1b3915e2-5670-4dcf-b753-4f88fcec5259__99999999
+      required:
+        - image_ids
+    ProductivityMapUpdateBody:
+      type: object
+      title: ProductivityMapUpdateBody
+      properties:
+        image_ids:
+          type: array
+          items:
+            type: string
+          example:
+            - CWOF_s2b_20230628_790866_F_1b3915e2-5670-4dcf-b753-4f88fcec5259__99999991
+            - CWOF_s2b_20230628_790866_F_1b3915e2-5670-4dcf-b753-4f88fcec5259__99999992
+      required:
+        - image_ids
+    MetadataFilter:
+      type: object
+      x-examples:
+        Example 1:
+          type: string
+          start_date: string
+          end_date: string
+          source: string
+          cloud_coverage_gte: 0
+      properties:
+        filter_type:
+          type: string
+          example: metadata_filter
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        source:
+          type: string
+          enum:
+            - all
+            - landsat8
+            - sentinel2
+            - sentinel2-a
+            - sentinel2-b
+            - sentinel2-l2a
+            - planet
+            - planet_sr
+            - drone
+          description: The source of images
+          default: all
+        cloud_coverage_gte:
+          type: number
+          description: Cloud coverage greather than
+      required:
+        - filter_type
+    SceneIdsFilter:
+      title: SceneIdsFilter
+      type: object
+      x-stoplight:
+        id: 623e90151ee44
+      properties:
+        filter_type:
+          type: string
+          example: scene_ids_filter
+        scene_ids:
+          type: array
+          items:
+            type: string
+      required:
+        - filter_type
+        - scene_ids
+      x-examples:
+        Example 1:
+          filter_type: scene_ids_filter
+          scene_ids:
+            - string
+    DeprecatedRasterParams:
+      title: RasterParams
+      type: object
+      x-examples:
+        example-1:
+          format: mbtiles
+          min_zoom_level: 9
+          max_zoom_level: 14
+      properties:
+        top_left_latitude:
+          type: number
+          format: float
+          description: Top left latitude coordinate of the property bounding box
+        top_left_longitude:
+          type: number
+          format: float
+          description: Top left longitude coordinate of the property bounding box
+        bottom_right_latitude:
+          type: number
+          format: float
+          description: Bottom right latitude coordinate of the property bounding box
+        bottom_right_longitude:
+          type: number
+          format: float
+          description: Bottom right longitude coordinate of the property bounding box
+        tile_format:
+          type: string
+          enum:
+            - mbtiles
+            - zipped-folder-structure
+          default: mbtiles
+        image_format:
+          type: string
+          enum:
+            - jpeg
+            - png
+          default: png
+        min_zoom_level:
+          type: integer
+          minimum: 0
+          maximum: 22
+          default: 9
+        max_zoom_level:
+          type: integer
+          minimum: 0
+          maximum: 22
+          default: 14
+      description: RasterParams is used as a component to compose tile download requests.
+      required:
+        - top_left_latitude
+        - top_left_longitude
+        - bottom_right_latitude
+        - bottom_right_longitude
+    RasterParams:
+      title: RasterParams
+      type: object
+      x-stoplight:
+        id: c3eb49c1df7fa
+      properties:
+        subproduct:
+          type: string
+          enum:
+            - drymatter
+            - shadow_corrected_drymatter
+            - legacy_cloud_shadow
+            - ndvi
+            - savi
+            - rgb
+            - evi
+            - ndwi
+            - ndvig
+            - rvi
+            - arvi
+            - nir
+            - vari
+            - raw
+            - _
+            - custom
+          example: ndvi
+          description: Sub-products generated from this `image`
+        raster_type:
+          type: string
+          enum:
+            - truecolor
+            - falsecolor
+            - falsecolor_alt_3
+            - falsecolor_alt_4
+            - falsecolor_alt_5
+            - falsecolor_alt_6
+            - falsecolor_alt_8
+            - falsecolor_alt_10
+            - falsecolor_alt_11
+            - multicolor
+            - raw
+            - bw
+            - highcontrast
+          default: falsecolor
+          example: falsecolor
+          description: Type of post-processing to be applied in the raster sub-product
+        clipping_params:
+          $ref: '#/components/schemas/ClippingParams'
+      required:
+        - subproduct
+    ClippingParams:
+      title: ClippingParams
+      type: object
+      x-examples:
+        example-1:
+          format: mbtiles
+          min_zoom_level: 9
+          max_zoom_level: 14
+      description: RasterParams is used as a component to compose tile download requests.
+      x-stoplight:
+        id: 903e3febdbcb0
+      properties:
+        top_left_latitude:
+          type: number
+          format: float
+          description: Top left latitude coordinate of the property bounding box
+        top_left_longitude:
+          type: number
+          format: float
+          description: Top left longitude coordinate of the property bounding box
+        bottom_right_latitude:
+          type: number
+          format: float
+          description: Bottom right latitude coordinate of the property bounding box
+        bottom_right_longitude:
+          type: number
+          format: float
+          description: Bottom right longitude coordinate of the property bounding box
+      required:
+        - top_left_latitude
+        - top_left_longitude
+        - bottom_right_latitude
+        - bottom_right_longitude
+    MBTilesDownloadParams:
+      type: object
+      x-examples:
+        Example 1:
+          min_zoom_level: 9
+          max_zoom_level: 14
+          tile_size: 256
+          download_type: mbtiles
+      title: MBTilesDownloadParams
+      properties:
+        download_type:
+          type: string
+          enum:
+            - mbtiles
+            - zipped-folder-structure
+          example: mbtiles
+        tiles_format:
+          type: string
+          enum:
+            - mbtiles
+            - zipped-folder-structure
+        min_zoom_level:
+          type: integer
+        max_zoom_level:
+          type: integer
+        tile_size:
+          type: integer
+        session_token:
+          type: string
+    ProcessDrymatterLuminanceThresholdParams:
+      type: object
+      x-examples:
+        Example 1:
+          min_zoom_level: 9
+          max_zoom_level: 14
+          tile_size: 256
+          download_type: bundle_download
+      title: ProcessDrymatterLuminanceThresholdParams
+      properties:
+        download_type:
+          type: string
+          example: process_drymatter_luminance_thresholds
+          enum:
+            - process_drymatter_luminance_thresholds
+        image_id:
+          type: string
+          example: FSCI__S2A_MSIL1C_20180107T092231_M0779_R038_T91KMN_20180107T092231__FSCI76d84c5dd8199ae4b001a3653ddacaef
+    BundleDownloadParams:
+      type: object
+      x-examples:
+        Example 1:
+          download_type: bundle_download
+          image_format: png
+          aggregation_level: field
+          export_stats: true
+      title: Bundle Download Params
+      properties:
+        download_type:
+          type: string
+          example: bundle_download
+          enum:
+            - bundle_download
+        image_format:
+          type: string
+          description: Format of the encoding
+          enum:
+            - jpeg
+            - png
+            - tiff
+            - webp
+            - bmp
+          example: png
+        aggregation_level:
+          type: string
+          enum:
+            - property
+            - field
+          description: 'If ''property'' is set, then the output will produce "property" level images. If ''field'' is set, then field images will be produced.'
+        export_stats:
+          type: boolean
+        raster_size:
+          type: integer
+      required:
+        - download_type
+        - image_format
+        - aggregation_level
+    Pageable:
+      title: Pageable
+      type: object
+      x-examples:
+        example-1:
+          cursor: Y2U5OTUzNjEtYzNmOC00OTdmLTkyNzAtOTAwNDhiZGNkYzFh
+          size: 20
+          sort:
+            - 'acquired_at,desc'
+            - 'cloud_coverage,asc'
+      properties:
+        cursor:
+          type: string
+        size:
+          type: integer
+          minimum: 1
+          maximum: 150
+        sort:
+          type: array
+          items:
+            type: string
+      description: Pageable is used as a component to compose pagination functionalitty on requests.
+    DateWindow:
+      title: DateWindow
+      type: object
+      properties:
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+      description: 'Simple date window, with a starting date and an ending date.'
+    AoiTarget:
+      title: AoiTarget
+      type: object
+      description: 'Type of Area of Interest, and at which date is its geometry to be considered.'
+      properties:
+        uid:
+          type: string
+        type:
+          type: string
+          enum:
+            - property
+            - hash
+            - field
+            - composite_property
+            - region
+            - composite_region
+          example: property
+          description: A type of area of interest
+        as_of:
+          type: string
+          format: date
+      required:
+        - uid
+        - type
+    BoundingBoxTarget:
+      title: BoundingBoxTarget
+      type: object
+      properties:
+        top_left:
+          $ref: '#/components/schemas/Point'
+        bottom_right:
+          $ref: '#/components/schemas/Point'
+      description: |-
+        Object that descbribes a Bounding Box of a geometry. Using Mercator Projection EPSG:4326.
+        Different of the GeoJSON bounding box, this has explicit the position of each coordinate, and which is latitude and longitude
+    Point:
+      title: Point
+      type: object
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+      description: 'Single point, with latitude and longitude, using Mercator Projection EPSG:4326'
+    ScenesPage:
+      title: ScenesPage
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          properties:
+            contents:
+              $ref: '#/components/schemas/Scene'
+      description: Paginated response of Scenes.
+    Mask:
+      title: Mask
+      type: object
+      description: This mask is used to define the boundaries to be used by specific functions or sources.
+      properties:
+        mask_type:
+          type: string
+          example: bcpl
+          enum:
+            - bbox
+            - bcpl
+            - planet
+        geometry:
+          $ref: '#/components/schemas/GeoJSON'
+        tags:
+          $ref: '#/components/schemas/Tags'
+        description:
+          type: string
+      required:
+        - mask_type
+        - geometry
+        - tags
+    GeoJSON:
+      title: GeoJSON
+      description: 'Geojson object definition, it expects to be using the CRS Mercator Projection EPSG:4326.'
+      oneOf:
+        - $ref: '#/components/schemas/Polygon'
+        - $ref: '#/components/schemas/MultiPolygon'
+        - $ref: '#/components/schemas/Feature'
+        - $ref: '#/components/schemas/FeatureCollection'
+        - $ref: '#/components/schemas/Geometry'
+        - $ref: '#/components/schemas/GeometryCollection'
+      x-tags:
+        - GeoJSON
+    ImagePage:
+      title: ImagePage
+      allOf:
+        - type: object
+          properties:
+            contents:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/Image'
+                  - $ref: '#/components/schemas/SelfLink'
+                  - $ref: '#/components/schemas/EmbeddedResources'
+        - $ref: '#/components/schemas/PageInfo'
+      description: Paginated response of Images.
+      x-examples:
+        example-1:
+          contents:
+            - id: string
+              acquired_at: '2019-08-24T14:15:22Z'
+              scene_cloud_coverage: 0
+              image_cloud_coverage: 0
+              last_processed_at: '2019-08-24T14:15:22Z'
+              scenes:
+                - string
+              aoi_type: string
+              aoi_id: string
+              _self:
+                href: string
+                type: GET
+                rel: string
+              _embedded:
+                _links:
+                  - href: string
+                    type: GET
+                    rel: string
+          number: 0
+          size: 0
+          empty: true
+          last: true
+          total_pages: 0
+          total_elements: 0
+          first: true
+          number_of_elements: 0
+          sort:
+            - string
+    AoiSettings:
+      title: AoiSettingsRequest
+      type: object
+      properties:
+        property_id:
+          type: string
+        aois:
+          type: array
+          items: {}
+      description: Request body for settings of multiple Areas of Interest.
+    AoisPage:
+      title: AoisPage
+      allOf:
+        - type: object
+          properties:
+            contents:
+              type: array
+              items:
+                $ref: '#/components/schemas/Aoi'
+        - $ref: '#/components/schemas/PageInfo'
+      description: Paginated Response for Areas of Interest.
+    AoisNotificationList:
+      title: AoisNotificationList
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AoisNotification'
+        cursor:
+          type: string
+          nullable: true
+        size:
+          type: integer
+    DroneNotificationMetadata:
+      title: DroneNotificationMetadata
+      type: object
+      properties:
+        name:
+          type: string
+          description: Drone saved filename
+        taken_at:
+          type: string
+          format: date-time
+          description: When the image was taken at
+    DownloadNotificationMetadata:
+      title: DownloadNotificationMetadata
+      type: object
+      properties:
+        download_url:
+          type: string
+          description: Url from file to download
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+    AoisNotification:
+      title: AoisNotifications
+      type: object
+      properties:
+        created_at:
+          type: string
+        info_message:
+          type: string
+        status:
+          type: string
+        extra_attrs:
+          description: Object with specific attr for each notification type
+          anyOf:
+            - $ref: '#/components/schemas/DownloadNotificationMetadata'
+            - $ref: '#/components/schemas/DroneNotificationMetadata'
+        type:
+          type: string
+          enum:
+            - DOWNLOADS
+            - DRONE_UPLOADS
+        id:
+          type: string
+      required:
+        - created_at
+        - info_message
+        - status
+        - extra_attrs
+        - type
+    Polygon:
+      title: Polygon
+      type: object
+      description: GeoJSON Polygon.
+      x-tags:
+        - GeoJSON
+      properties:
+        type:
+          type: string
+          enum:
+            - Polygon
+        coordinates:
+          $ref: '#/components/schemas/PolygonCoordinates'
+        bbox:
+          $ref: '#/components/schemas/Bbox'
+      required:
+        - type
+        - coordinates
+    MultiPolygon:
+      title: MultiPolygon
+      type: object
+      description: GeoJSON MultiPolygon.
+      x-tags:
+        - GeoJSON
+      properties:
+        type:
+          type: string
+          enum:
+            - MultiPolygon
+        coordinates:
+          type: array
+          items:
+            $ref: '#/components/schemas/PolygonCoordinates'
+        bbox:
+          $ref: '#/components/schemas/Bbox'
+      required:
+        - type
+        - coordinates
+    Feature:
+      title: Feature
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          oneOf:
+            - type: string
+            - type: integer
+        properties:
+          type: object
+          nullable: true
+        geometry:
+          oneOf:
+            - $ref: '#/components/schemas/Geometry'
+            - $ref: '#/components/schemas/GeometryCollection'
+        bbox:
+          $ref: '#/components/schemas/Bbox'
+      required:
+        - type
+        - properties
+      description: GeoJSON Feature.
+      x-tags:
+        - GeoJSON
+    FeatureCollection:
+      title: FeatureCollection
+      type: object
+      description: GeoJSON FeatureCollection.
+      x-tags:
+        - GeoJSON
+      properties:
+        type:
+          type: string
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Feature'
+        bbox:
+          $ref: '#/components/schemas/Bbox'
+      required:
+        - type
+        - features
+    Geometry:
+      title: Geometry
+      oneOf:
+        - $ref: '#/components/schemas/Polygon'
+        - $ref: '#/components/schemas/MultiPolygon'
+      x-tags:
+        - GeoJSON
+      description: GeoJSON Geometry.
+    Bbox:
+      title: Bbox
+      type: array
+      description: GeoJSON BoundingBox.
+      x-tags:
+        - GeoJSON
+      items:
+        type: number
+        minimum: 4
+        maximum: 4
+      x-examples:
+        example-1:
+          - 4
+          - 1
+          - 2
+          - 3
+    GeometryCollection:
+      title: GeometryCollection
+      type: object
+      x-tags:
+        - GeoJSON
+      description: GeoJSON GeometryCollection.
+      properties:
+        type:
+          type: string
+          example: GeometryCollection
+        geometries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Geometry'
+        bbox:
+          $ref: '#/components/schemas/Bbox'
+      required:
+        - type
+        - geometries
+    PolygonCoordinates:
+      title: PolygonCoordinates
+      type: array
+      items:
+        $ref: '#/components/schemas/LinearRingCoordinates'
+      description: GeoJSON PolygonCoordinates.
+      x-tags:
+        - GeoJSON
+    LinearRingCoordinates:
+      type: array
+      title: LinearRingCoordinates
+      minItems: 4
+      items:
+        $ref: '#/components/schemas/PointCoordinates'
+      description: GeoJSON LinearRingCoordinates.
+      x-tags:
+        - GeoJSON
+    PointCoordinates:
+      type: array
+      title: PointCoordinates
+      minItems: 2
+      items:
+        type: number
+      description: GeoJSON PointCoordinates.
+      x-tags:
+        - GeoJSON
+    Tags:
+      title: Tags
+      type: array
+      items:
+        type: string
+        pattern: '^[A-Za-z0-9\-_]+'
+      description: 'Simple tags to mark specific objects. (regex: ^[A-Za-z0-9\-_]+ )'
+    RawBand:
+      type: string
+      title: RawBand
+      format: binary
+      description: 'RawBand, a binary representation'
+    RawBand64:
+      title: RawBand64
+      type: object
+      properties:
+        body:
+          type: string
+          description: Image encoded as a DataURL in base64
+          format: binary
+        format:
+          type: string
+          description: Format of the encoding
+          enum:
+            - jpeg
+            - png
+            - tiff
+            - webp
+            - bmp
+          example: png
+      required:
+        - body
+        - format
+    ComputedSubProduct:
+      title: ComputedSubProduct
+      type: object
+      properties:
+        image_id:
+          type: string
+        sub_product_requested:
+          type: string
+        expression_applied:
+          type: string
+        processed_at:
+          type: string
+        content:
+          type: object
+          properties:
+            matrix:
+              type: array
+              items:
+                type: array
+                items:
+                  type: number
+            height:
+              type: integer
+            width:
+              type: integer
+            max:
+              type: number
+            min:
+              type: number
+            stdev:
+              type: number
+            avg:
+              type: number
+    BaseError:
+      title: BaseError
+      x-stoplight:
+        id: 2uxxa3lb45n5o
+      type: object
+      x-examples:
+        example-1:
+          timestamp: '2019-02-27T04:21:17.740+0000'
+          status: 404
+          error: Not Found
+          code: EACC012
+          message: Account does not exist
+          path: /v2/accounts/34550190-7d4f-4a03-91ec-4f5568e50029
+          _links:
+            qr_code_report: 'data:image/png;base64,...'
+            endpoint_docs_ref: 'https://docs.imagery.cropwise.com/...'
+      properties:
+        timestamp:
+          type: string
+        status:
+          type: integer
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        _links:
+          type: object
+          properties:
+            qr_code_report:
+              type: string
+              nullable: true
+            endpoint_docs_ref:
+              type: string
+      description: Base model to error response.
+    ZoneImageLegacy:
+      title: ZoneImageLegacy
+      type: object
+      properties:
+        image_ids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        prescription:
+          type: object
+          required:
+            - type
+            - map
+          properties:
+            type:
+              type: string
+            map:
+              type: array
+              items:
+                type: object
+                properties:
+                  start:
+                    type: number
+                  end:
+                    type: number
+                  startp:
+                    type: number
+                  endp:
+                    type: number
+                required:
+                  - start
+                  - end
+                  - startp
+                  - endp
+        mask_id:
+          type: string
+        exprs:
+          type: array
+          items:
+            type: string
+      required:
+        - image_ids
+    ZoneImageCWOThreshold:
+      title: ZoneImageCWOThreshold
+      type: object
+      properties:
+        image_ids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          example:
+            - CWOF_s2b_20230628_790866_F_uuid__99999991
+            - CWOF_s2b_20230628_790866_F_uuid__99999992
+        cell_size:
+          type: integer
+          example: 10
+        prescription:
+          type: object
+          required:
+            - map
+          properties:
+            map:
+              type: array
+              items:
+                type: object
+                properties:
+                  start:
+                    type: number
+                    example: 0
+                  end:
+                    type: number
+                    example: 0.5
+                required:
+                  - start
+                  - end
+      required:
+        - image_ids
+    ZoneImageCWOZonesNumber:
+      title: ZoneImageCWOZonesNumber
+      type: object
+      properties:
+        image_ids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          example:
+            - CWOF_s2b_20230628_790866_F_uuid__99999991
+            - CWOF_s2b_20230628_790866_F_uuid__99999992
+        zones_number:
+          type: integer
+          example: 2
+      required:
+        - image_ids
+    ZoneImageExport:
+      title: ZoneImageExport
+      type: object
+      allOf:
+        - anyOf:
+            - $ref: '#/components/schemas/ZoneImageCWOZonesNumber'
+            - $ref: '#/components/schemas/ZoneImageCWOThreshold'
+        - type: object
+          properties:
+            filename:
+              type: string
+              example: FieldIDName
+            file_extension:
+              type: string
+              enum:
+                - shapefile
+    ProductivityMapResponse:
+      title: ProductivityMap
+      type: object
+      properties:
+        data:
+          type: array
+          minItems: 1
+          items:
+            type: array
+            items:
+              type: integer
+        geo:
+          type: object
+          properties:
+            step:
+              type: object
+              properties:
+                x:
+                  type: number
+                'y':
+                  type: number
+            top_left_corner:
+              type: object
+              properties:
+                x:
+                  type: number
+                'y':
+                  type: number
+        shapes:
+          type: object
+        zones:
+          type: object
+    Download:
+      title: Download
+      x-stoplight:
+        id: w4li6bbjj99bo
+      type: object
+      properties:
+        created_at:
+          type: string
+        status:
+          type: string
+          enum:
+            - PENDING
+            - PROCESSING
+            - DONE
+            - FAILED
+        info_message:
+          type: string
+          description: Message about the status of the download
+        requested_data:
+          $ref: '#/components/schemas/CreateDownloadRequest'
+        requester_id:
+          type: string
+        uuid:
+          type: string
+        completed_at:
+          type: string
+        download_link:
+          type: string
+          description: Link to download the file if successfully completed. None if failed or processing.
+        download_type:
+          type: string
+          description: Requested download type
+          enum:
+            - bundle_download
+            - mbtiles
+            - zipped-folder-structure
+      required:
+        - created_at
+        - status
+        - requested_data
+        - requester_id
+    DownloadsResult:
+      type: object
+      x-examples: {}
+      title: Downloads Result
+      x-stoplight:
+        id: 7be8b81cd946e
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Download'
+        cursor:
+          type: string
+        size:
+          type: integer
+      required:
+        - content
+    ProductivityMaps:
+      type: object
+      title: Productivity Map Object
+      x-examples:
+        Example 1:
+          id: string
+          acquired_at: '2023-07-10T01:00:00Z'
+          aoi:
+            type: field
+            uid: 0352800c790a761a882e54ddeb6f0948
+          composed_of:
+            - CWOF_s2b_20230628_790866_F_uuid__99999991
+            - CWOF_s2b_20230628_790866_F_uuid__99999992
+            - CWOF_s2b_20230628_790866_F_uuid__99999993
+      properties:
+        id:
+          type: string
+        acquired_at:
+          type: string
+          format: date-time
+          description: Date when the source was acquired
+        aoi:
+          type: object
+          properties:
+            type:
+              type: string
+            uid:
+              type: string
+        composed_of:
+          type: array
+          items:
+            type: string
+    ProductivityMapsListResponse:
+      type: array
+      title: Productivity Map List response
+      items:
+        $ref: '#/components/schemas/ProductivityMaps'
+    PrescriptionBody:
+      title: PrescriptionBody
+      x-stoplight:
+        id: 9sqn82lmoztl9
+      type: object
+      properties:
+        copy:
+          type: boolean
+          default: false
+        fertilizer_type:
+          type: string
+          enum:
+            - Liquid
+            - Granular
+        field_id:
+          type: string
+          format: uuid
+        property_id:
+          type: string
+          format: uuid
+        prescription_type:
+          type: string
+          enum:
+            - fertilizer
+            - seeding
+            - cropprotection
+        products:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Product'
+        feature_collection:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PrescriptionFeature'
+      required:
+        - fertilizer_type
+        - field_id
+        - property_id
+        - prescription_type
+        - products
+        - feature_collection
+    Product:
+      title: Product
+      x-stoplight:
+        id: 45a4b68a4cef5
+      type: object
+      properties:
+        product_name:
+          type: string
+          minLength: 1
+        units:
+          type: string
+          minLength: 1
+      required:
+        - product_name
+        - units
+    PrescriptionFeature:
+      title: PrescriptionFeature
+      x-stoplight:
+        id: 2bbyw62935kk1
+      type: object
+      properties:
+        type:
+          type: string
+        properties:
+          type: object
+          required:
+            - id
+            - area
+            - DN
+          properties:
+            id:
+              type: string
+            area:
+              type: number
+              format: float
+              minimum: 0
+            DN:
+              type: integer
+            ndvi:
+              type: number
+              minimum: -1.0
+              maximum: 1.0
+              default: 0
+            rate:
+              type: number
+              default: 0
+        geometry:
+          type: object
+      required:
+        - type
+        - properties
+        - geometry
+    AoiFieldsStatsList:
+      title: List of stats for each field
+      type: object
+      properties:
+        field_id:
+          type: array
+          description: The requested field ID (dynamic)
+          items:
+            $ref: '#/components/schemas/AoiFieldStats'
+    AoiFieldStats:
+      title: Aoi Field stats object
+      type: object
+      properties:
+        acquisition_date:
+          type: string
+          format: date-time
+          description: Date when the image as processed
+        cloud_cover_mean:
+          type: number
+        cloud_coverage_lib_version:
+          type: string
+        histogram_max:
+          type: number
+        histogram_min:
+          type: number
+        image_cloud_coverage:
+          type: number
+        image_id:
+          type: string
+        ndvi_max:
+          type: number
+        ndvi_min:
+          type: number
+        ndvi_mean:
+          type: number
+        ndvi_stdev:
+          type: number
+        source:
+          type: string
+          enum:
+            - sentinel
+            - planet
+  securitySchemes:
+    Authorization:
+      type: oauth2
+      flows:
+        password:
+          tokenUrl: none
+          refreshUrl: none
+          scopes: {}
+  parameters:
+    aoi_id:
+      name: aoi_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Internal `Area of interest ID`
+    sc_id:
+      name: sc_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Scene ID
+    p_id:
+      name: p_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Property ID
+    masks:
+      name: masks
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - bbox
+          - bcpl
+      description: Type of mask for property
+    i_id:
+      name: i_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Image ID
+    i_ids:
+      name: i_ids
+      in: path
+      required: true
+      schema:
+        type: string
+      description: 'List of Image IDs separated by ","(comma) in raw text'
+      example: 'CWOF_s2b_20230628_790866_F_uuid__99999991,CWOF_s2b_20230628_790866_F_uuid__99999992'
+    start_date:
+      name: start_date
+      in: query
+      required: true
+      schema:
+        type: string
+        example: '2022-01-27'
+        format: date
+      description: Start date in a time window
+    end_date:
+      name: end_date
+      in: query
+      required: false
+      schema:
+        type: string
+        example: '2021-03-22'
+        format: date
+      description: 'Final date in a date window, if missing it defaults to today.'
+    sub_product:
+      name: sub_product
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - drymatter
+          - shadow_corrected_drymatter
+          - legacy_cloud_shadow
+          - ndvi
+          - savi
+          - rgb
+          - evi
+          - ndwi
+          - ndvig
+          - rvi
+          - arvi
+          - nir
+          - vari
+          - raw
+          - _
+          - custom
+      example: ndvi
+      description: Sub-products generated from this `image`
+    raster_type:
+      name: raster_type
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - truecolor
+          - falsecolor
+          - falsecolor_alt_3
+          - falsecolor_alt_4
+          - falsecolor_alt_5
+          - falsecolor_alt_6
+          - falsecolor_alt_8
+          - falsecolor_alt_10
+          - falsecolor_alt_11
+          - multicolor
+          - raw
+          - bw
+          - highcontrast
+        default: falsecolor
+        example: falsecolor
+      description: Type of post-processing to be applied in the raster sub-product
+    raster_file_extension:
+      name: raster_file_extension
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - png
+          - jpeg
+          - webp
+          - tiff
+        example: png
+      description: File format extension for raster sub-products
+    s:
+      name: s
+      in: path
+      required: true
+      description: Tile size
+      schema:
+        type: integer
+        example: 512
+        default: 256
+    z:
+      name: z
+      in: path
+      required: true
+      description: Zoom level
+      schema:
+        type: integer
+        example: 16
+        default: 1
+    x:
+      name: x
+      in: path
+      required: true
+      description: X coordinate
+      schema:
+        type: integer
+        example: 212
+        default: 1
+    'y':
+      name: 'y'
+      in: path
+      required: true
+      description: Y coordinate
+      schema:
+        type: integer
+        example: 124
+        default: 1
+    y_highdpi:
+      name: y_highdpi
+      in: path
+      required: true
+      description: Y coordinate with information on DPI and file extension
+      schema:
+        type: string
+        example: 124@2x.png
+        default: 1.png
+    sub_resource:
+      name: sub_resource
+      in: path
+      required: true
+      schema:
+        type: string
+        example: histogram
+        enum:
+          - histogram
+          - b1
+          - b2
+          - b3
+          - b4
+          - b5
+          - b6
+          - b7
+          - b8
+          - b9
+          - b10
+          - b11
+          - b12
+          - stats
+          - stats-histogram
+          - c1
+          - c2
+          - c3
+          - c4
+      description: A sub-resource of a sub-product
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: 'Area of interest ID, a `Property ID` or `Region ID` or `Field ID`'
+    as_of:
+      name: as_of
+      in: query
+      schema:
+        type: string
+        format: date-time
+      description: Request boundaries as of a specific date
+    cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Cursor identification
+    sort:
+      name: sort
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+        example:
+          - 'acquired_at,desc'
+        default:
+          - 'acquired_at,desc'
+      description: 'Sorting order for the response contents, each sort tuple must be entered individually, example `...images&sort=acquired_at,desc&sort=cloud_coverage,asc`. The first parameter is only able to sort the `acquired_at` column as `desc` or `asc`. The other parameters will sort the final page.'
+    task_type:
+      name: download_type
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+            - all
+            - mbtiles
+            - zipped-folder-structure
+            - bundle_download
+        default:
+          - bundle_download
+    sort_downloads:
+      name: sort
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+        example:
+          - 'created_at,desc'
+        default:
+          - 'created_at,desc'
+      description: 'Sorting order for the response contents, each sort tuple must be entered individually, example `...images&sort=created_at,desc`. The first parameter is only able to sort the `created_at` column as `desc` or `asc`. The other parameters will sort the final page.'
+    size:
+      name: size
+      in: query
+      required: false
+      schema:
+        type: integer
+        example: 20
+        exclusiveMinimum: true
+        default: 20
+        minimum: 0
+      description: Number of items per page being requested
+    sources:
+      name: sources
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+            - all
+            - landsat8
+            - sentinel2
+            - sentinel2-a
+            - sentinel2-b
+            - sentinel2-l2a
+            - modi
+            - planet
+            - drone
+        default:
+          - all
+      description: The sources of images
+    aoi_type:
+      name: aoi_type
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - property
+          - field
+          - hash
+          - composite_property
+        example: field
+      description: A type of area of interest
+    uid:
+      name: uid
+      in: query
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: 'Area of interest ID, a `Property ID` or `Region ID` or `Field ID`'
+    ref_type:
+      name: aoi_type
+      in: query
+      required: true
+      schema:
+        type: string
+        enum:
+          - property
+          - hash
+          - field
+          - composite_property
+          - region
+          - composite_region
+        example: field
+      description: A type of area of interest
+    dynamic_band_expression:
+      name: dynamic_band_expression
+      in: query
+      required: false
+      schema:
+        type: string
+        example: KEI4LUI0KS8oQjgrQjQp
+      description: |-
+        Dynamic band expression encoded as a base64url word, for example, (B4-B3)/(B4+B3) would be encoded with base64url as KEI0LUIzKS8oQjQrQjMp.
+        You can also send the color bands instead of the bands numbers, for example, (NIR-RED)/(NIR+RED) would be encoded as KE5JUi1SRUQpLyhOSVIrUkVEKQ.
+        All values will be transformed to lowercase values after being received.
+    raster_size:
+      name: raster_size
+      in: query
+      required: false
+      schema:
+        type: integer
+        example: 128
+      description: Maximum size for longest raster side
+    bins:
+      name: bins
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 256
+        maximum: 256
+        minimum: 1
+      description: Number of bins when requesting histogram
+    scenes:
+      name: scenes
+      in: query
+      required: false
+      schema:
+        type: string
+      description: List scene_ids (asset_ids) to filter the AOI
+    upper_left_lat:
+      name: upper_left_lat
+      in: query
+      required: false
+      schema:
+        type: number
+        minimum: -90
+        maximum: 90
+      description: Upper left latitude coordinate of the bounding box
+    lower_right_lat:
+      name: lower_right_lat
+      in: query
+      required: false
+      schema:
+        type: number
+        minimum: -90
+        maximum: 90
+      description: Lower right latitude coordinate of the bounding box
+    lower_right_lon:
+      name: lower_right_lon
+      in: query
+      required: false
+      schema:
+        type: number
+        minimum: -180
+        maximum: 180
+      description: Lower right longitude coordinate of the bounding box
+    upper_left_lon:
+      name: upper_left_lon
+      in: query
+      required: false
+      schema:
+        type: number
+        minimum: -180
+        maximum: 180
+      description: Upper left longitude coordinate of the bounding box
+    variability:
+      name: variability
+      in: query
+      required: false
+      schema:
+        type: number
+        format: float
+        example: 0.7
+        minimum: 0.0
+        maximum: 1.0
+      description: Render an image with an increased or decreased variability of color
+    user_id:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: User ID
+    download_id:
+      name: download_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Download ID
+    process_missing_image_cloud_coverage:
+      name: process_missing_image_cloud_coverage
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: 'Enables to the value of clouds in the image be calculated, if it doesn''t have one initially.'
+    mean_mode:
+      name: mean_mode
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: 'Allow for faster delivery of information, returning only the average value of the image'
+    session_token:
+      name: session_token
+      in: query
+      required: false
+      schema:
+        type: string
+      description: 'Optionally accepts a session token to avoid usage of authorization header, reducing number of requests by not having OPTIONS automatically requested'
+    bearer_token:
+      name: bearer_token
+      in: query
+      required: false
+      schema:
+        type: string
+      description: 'Bearer token without the "Bearer" word, can be passed in the query string to avoid usage of authorization header.'
+    add_scene_bounds:
+      name: add_scene_bounds
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: Add bounds of the Scene to the response
+    field_id:
+      name: field_id
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Field ID
+    source:
+      name: source
+      in: query
+      required: true
+      schema:
+        type: string
+      description: The sources of images
+    exclude:
+      name: exclude
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+        example:
+          - composed_of
+      description: List of properties to exclude from the result
+    cloud_coverage_lt_eq:
+      name: cloud_coverage_lt_eq
+      in: query
+      required: false
+      schema:
+        type: number
+        default: 1.0
+        format: float
+        minimum: 0.0
+        maximum: 1.0
+      description: Image cloud coverage less than or equals
+    nonce:
+      name: nonce
+      in: query
+      required: false
+      schema:
+        type: integer
+        example: 1689163288159
+    property_id:
+      name: property_id
+      in: query
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Property ID
+    acquisition_date:
+      name: acquisition_date
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+      description: Image capture date
+    organization_id:
+      name: organization_id
+      in: query
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Organization Id
+    image_type:
+      name: image_type
+      in: query
+      required: true
+      schema:
+        type: string
+        enum:
+          - NDVI
+          - RGB
+      description: Image type
+    field_ids:
+      name: field_ids
+      in: query
+      required: true
+      schema:
+        type: string
+        example: 'field_id_1,field_id_2'
+        uniqueItems: true
+        minItems: 1
+      description: 'List of Fields IDs separated by ","(comma)'
+    time_stamp:
+      name: time_stamp
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date-time
+      description: Time Stamp of the request to disambiguate Drone Images ID creation
+    remove_zones:
+      name: remove_zones
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: Remove image zones from response
+  responses:
+    ImagesPageResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ImagePage'
+    ScenesPageResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ScenesPage'
+    AoisPageResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AoisPage'
+    AoisNotificationResponse:
+      description: Aois Notification response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AoisNotificationList'
+    ImageResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Image'
+              - $ref: '#/components/schemas/SelfLink'
+              - $ref: '#/components/schemas/EmbeddedResources'
+              - $ref: '#/components/schemas/Links'
+          examples:
+            example-1:
+              value:
+                id: string
+                acquired_at: '2019-08-24T14:15:22Z'
+                scene_cloud_coverage: 0
+                image_cloud_coverage: 0
+                last_processed_at: '2019-08-24T14:15:22Z'
+                scenes:
+                  - string
+                _self:
+                  href: string
+                  type: GET
+                  rel: string
+                _embedded:
+                  _links:
+                    - href: string
+                      type: GET
+                      rel: string
+                _links:
+                  - href: string
+                    type: GET
+                    rel: string
+    SubProductResponse:
+      description: 'Sub-Products response, with links to all the sub-resources available'
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ComputedSubProduct'
+              - $ref: '#/components/schemas/Links'
+              - $ref: '#/components/schemas/SelfLink'
+    SubResourceResponse:
+      description: Responses for sub resources
+      content:
+        application/json:
+          schema:
+            allOf:
+              - anyOf:
+                  - $ref: '#/components/schemas/Stats'
+                  - $ref: '#/components/schemas/Histogram'
+              - $ref: '#/components/schemas/SelfLink'
+              - $ref: '#/components/schemas/PageInfo'
+        image/png:
+          schema:
+            type: string
+            format: binary
+    RasterResponse:
+      description: Raster Image
+      content:
+        image/png:
+          schema:
+            $ref: '#/components/schemas/RawBand'
+        image/jpeg:
+          schema:
+            $ref: '#/components/schemas/RawBand'
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RawBand64'
+      headers: {}
+    MaskResponse:
+      description: Mask response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Mask'
+    AoiResponse:
+      description: Area of Interest response
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Aoi'
+              - $ref: '#/components/schemas/SelfLink'
+              - $ref: '#/components/schemas/Links'
+    SceneResponse:
+      description: Scene response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Scene'
+          examples:
+            example-1:
+              value:
+                id: string
+                center:
+                  latitude: 0
+                  longitude: 0
+                geometry:
+                  type: Polygon
+                  coordinates:
+                    - - - 0
+                        - 0
+                      - - 0
+                        - 0
+                      - - 0
+                        - 0
+                      - - 0
+                        - 0
+                  bbox:
+                    - 4
+                area: 0
+                acquired_at: '2021-04-19T22:10:57.000Z'
+                cloud_coverage: 0
+                source: string
+                _embedded:
+                  _links:
+                    - href: string
+                      type: GET
+                      rel: string
+    SubProductsPaginatedResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            properties:
+              id:
+                type: string
+    BaseErrorResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BaseError'
+          examples:
+            example-1:
+              value:
+                timestamp: string
+                status: 0
+                error: string
+                code: string
+                message: string
+                path: string
+                _links:
+                  qr_code_report: string
+                  endpoint_docs_ref: string
+    DownloadsResponse:
+      description: Downloads response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DownloadsResult'
+    DownloadResponse:
+      description: Download response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Download'
+    ProductivityMapsResponse:
+      description: Productivity Map Listing
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProductivityMaps'
+    ProductivityMapsListResponse:
+      description: Productivity Map Listing
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProductivityMapsListResponse'
+    PrescriptionPageResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              content:
+                x-stoplight:
+                  id: at3zujktvb9cp
+                type: array
+                items:
+                  $ref: '#/components/schemas/PrescriptionBody'
+              cursor:
+                type: string
+                x-stoplight:
+                  id: mf7mjgn1ynvrn
+                default: None
+              size:
+                type: integer
+                x-stoplight:
+                  id: vpzl0dpf7i07a
+    PrescriptionResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PrescriptionBody'
+    PrescriptionsShapefileResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              signed_link:
+                type: string
+            x-examples:
+              Example 1:
+                signed_link: 'https://aws.s3.resource'
+    PrescriptionIDResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            type: object
+            format: uuid
+            properties:
+              prescription_id:
+                type: string
+                x-stoplight:
+                  id: iknkg4bqsbpfq
+                format: uuid
+    AoiStatsResponse:
+      description: AOI Stats endpoint response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AoiFieldsStatsList'
+  requestBodies:
+    AoiSettingsRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AoiSettings'
+    PropertyMaskRequest:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              tags:
+                $ref: '#/components/schemas/Tags'
+              geometry:
+                $ref: '#/components/schemas/GeoJSON'
+              description:
+                type: string
+                maxLength: 1024
+                minLength: 0
+            required:
+              - geometry
+      description: ''
+    SceneRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SceneRequest'
+    DownloadRequestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DownloadRequest'
+    CreateDownloadRequestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateDownloadRequest'
+    ZoneImageRequest:
+      content:
+        application/json:
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/ZoneImageCWOZonesNumber'
+              - $ref: '#/components/schemas/ZoneImageCWOThreshold'
+              - $ref: '#/components/schemas/ZoneImageLegacy'
+    ZoneImageExportRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneImageExport'
+    ProductivityMapCreateBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProductivityMapCreateBody'
+    ProductivityMapUpdateBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProductivityMapUpdateBody'
+    PrescriptionsShapefileBody:
+      content:
+        application/json:
+          schema:
+            type: object
+      description: ''
