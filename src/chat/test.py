@@ -4,7 +4,7 @@ import predictionguard as pg
 import json
 import yaml
 
-with open("../config.yaml", 'r') as file:
+with open("../../config.yaml", 'r') as file:
     config = yaml.safe_load(file)
 
 os.environ['PREDICTIONGUARD_TOKEN'] = config['predictionguard_token']
