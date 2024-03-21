@@ -1,19 +1,18 @@
 import * as React from "react";
 import { StyleSheet, View, Pressable, Text, TextInput } from "react-native";
 import { Image } from "expo-image";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { useNavigation, ParamListBase } from "@react-navigation/native";
 import { Border, FontFamily, FontSize, Color } from "../GlobalStyles";
 
 const DashboardOffline = () => {
   const [message, setMessage] = React.useState("");
 
   const sendMessage = () => {
-    // the message is sent to the model
-    console.log("Message sent:", message);
-    // Add the code to send the message or perform any action
-    setMessage(""); // Clear the input after sending the message
-    return;
+    if (message.trim()) {
+      // If message isn't just white space
+      console.log("Message sent:", message);
+      // Add the code to send the message or perform any action
+      setMessage(""); // Clear the input after sending the message
+    }
   };
 
   return (
@@ -38,6 +37,16 @@ const DashboardOffline = () => {
           onChangeText={setMessage} // Update state on change
           onSubmitEditing={sendMessage} // Call sendMessage when the user submits the input
         />
+        <Pressable
+          style={styles.sendButton}
+          onPress={sendMessage} // Use the button to send message
+        >
+          <Image
+            style={styles.polygonIcon}
+            contentFit="cover"
+            source={require("../assets/polygon-1.png")}
+          />
+        </Pressable>
       </View>
 
       <View style={[styles.ellipseParent, styles.rectangleParentLayout]}>
@@ -95,6 +104,13 @@ const styles = StyleSheet.create({
     backgroundColor: Color.colorLightcyan,
   },
   farmtest011Icon: {
+    top: 125,
+    left: 77,
+    width: 232,
+    height: 232,
+    position: "absolute",
+  },
+  polygonIcon: {
     top: 125,
     left: 77,
     width: 232,
@@ -225,6 +241,9 @@ const styles = StyleSheet.create({
     backgroundColor: Color.colorLightcyan,
     justifyContent: "center",
     alignItems: "stretch",
+  },
+  sendButton: {
+    padding: 10, // Add padding to increase touchable area
   },
 });
 
