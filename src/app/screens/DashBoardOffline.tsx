@@ -1,19 +1,23 @@
 import * as React from "react";
-import { StyleSheet, View, Pressable, Text } from "react-native";
+import { StyleSheet, View, Pressable, Text, TextInput } from "react-native";
 import { Image } from "expo-image";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation, ParamListBase } from "@react-navigation/native";
 import { Border, FontFamily, FontSize, Color } from "../GlobalStyles";
 
 const DashboardOffline = () => {
-  const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
+  const [message, setMessage] = React.useState("");
+
+  const sendMessage = () => {
+    // the message is sent to the model
+    console.log("Message sent:", message);
+    // Add the code to send the message or perform any action
+    setMessage(""); // Clear the input after sending the message
+    return;
+  };
 
   return (
     <View style={styles.dashboardoffline}>
-      <Pressable
-        style={[styles.dashboardofflineChild, styles.frameIconLayout]}
-        onPress={() => navigation.navigate("Dashboard")}
-      />
       <Image
         style={styles.farmtest011Icon}
         contentFit="cover"
@@ -21,24 +25,21 @@ const DashboardOffline = () => {
       />
       <View style={[styles.rectangleParent, styles.rectangleParentLayout]}>
         <View style={styles.frameChild} />
-        <Image
-          style={styles.frameItem}
-          contentFit="cover"
-          source={require("../assets/vector-1.svg")}
-        />
         <Text style={[styles.hiJohnAround, styles.hiFarmiTypo]}>
           Hi John, around noon the wind will pick up. Better to lower the
           pressure of your pumps on the fields!
         </Text>
         <View style={styles.frameInner} />
         <View style={[styles.rectangleView, styles.rectangleParentLayout]} />
-        <Image
-          style={styles.groupIcon}
-          contentFit="cover"
-          source={require("../assets/group-4.svg")}
+        <TextInput
+          style={[styles.hiFarmi, styles.hiFarmiTypo]} // You may need to adjust styles for TextInput
+          placeholder="Type your message..." // placeholder text
+          value={message} // Controlled value
+          onChangeText={setMessage} // Update state on change
+          onSubmitEditing={sendMessage} // Call sendMessage when the user submits the input
         />
-        <Text style={[styles.hiFarmi, styles.hiFarmiTypo]}>Hi Farmi...</Text>
       </View>
+
       <View style={[styles.ellipseParent, styles.rectangleParentLayout]}>
         <Text style={[styles.text, styles.textPosition]}>!</Text>
         <Text style={[styles.offlineUsageFarmiContainer, styles.textTypo]}>
@@ -50,16 +51,6 @@ const DashboardOffline = () => {
         </Text>
       </View>
       <View style={styles.homeIndicator} />
-      <Image
-        style={styles.frameIconLayout}
-        contentFit="cover"
-        source={require("../assets/frame.svg")}
-      />
-      <Image
-        style={styles.statusBarIcon}
-        contentFit="cover"
-        source={require("../assets/status-bar.png")}
-      />
       <View style={styles.dashboardofflineInner}>
         <View style={[styles.ellipseGroup, styles.groupPosition]}>
           <Image
@@ -74,10 +65,6 @@ const DashboardOffline = () => {
 };
 
 const styles = StyleSheet.create({
-  frameIconLayout: {
-    width: 393,
-    height: 852,
-  },
   rectangleParentLayout: {
     borderRadius: Border.br_3xs,
     position: "absolute",
@@ -87,7 +74,6 @@ const styles = StyleSheet.create({
     textAlign: "left",
     fontFamily: FontFamily.imprimaRegular,
     fontSize: FontSize.size_xs,
-    position: "absolute",
   },
   textPosition: {
     top: 12,
@@ -106,11 +92,7 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   dashboardofflineChild: {
-    top: 57,
     backgroundColor: Color.colorLightcyan,
-    left: 0,
-    width: 393,
-    position: "absolute",
   },
   farmtest011Icon: {
     top: 125,
@@ -124,18 +106,14 @@ const styles = StyleSheet.create({
     left: 89,
     borderRadius: Border.br_8xs,
     width: 261,
+    // Increase this height if you expect the text to wrap into multiple lines
     height: 55,
     position: "absolute",
     backgroundColor: Color.colorWhite,
-  },
-  frameItem: {
-    top: 55,
-    left: 79,
-    width: 10,
-    height: 6,
-    position: "absolute",
+    padding: 10, // Add some padding to contain the text nicely
   },
   hiJohnAround: {
+    right: 10,
     left: 99,
     width: 241,
     color: Color.colorBlack,
@@ -156,38 +134,20 @@ const styles = StyleSheet.create({
     width: 216,
     height: 23,
   },
-  groupIcon: {
-    top: 112,
-    left: 76,
-    width: 20,
-    height: 19,
-    position: "absolute",
-  },
   hiFarmi: {
-    top: 115,
+    top: 97,
     left: 114,
     color: Color.colorWhite,
-    width: 75,
-  },
-  ellipseIcon: {
-    top: 109,
-    left: 328,
-    height: 26,
-    width: 26,
-    position: "absolute",
+    zIndex: 1,
   },
   rectangleParent: {
     top: 378,
     left: 15,
     backgroundColor: Color.colorAliceblue_100,
+
     width: 363,
     height: 143,
-    overflow: "hidden",
-  },
-  frameChild1: {
-    left: 21,
-    width: 26,
-    top: 12,
+    borderRadius: 10,
   },
   text: {
     left: 31,
@@ -211,6 +171,7 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   ellipseParent: {
+    borderRadius: Border.br_3xs,
     top: 84,
     left: 18,
     backgroundColor: "#aec9d1",
@@ -227,13 +188,6 @@ const styles = StyleSheet.create({
     height: 5,
     position: "absolute",
   },
-  statusBarIcon: {
-    left: 55,
-    width: 302,
-    height: 12,
-    top: 22,
-    position: "absolute",
-  },
   icon1: {
     top: 1,
     left: 2,
@@ -242,6 +196,15 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   ellipseGroup: {
+    backgroundColor: "white",
+    width: 100,
+    height: 100,
+    // Make it round
+    borderRadius: 50, // half of the width/height
+    // Center the icon inside the circle
+    justifyContent: "center",
+    alignItems: "center",
+    // Apply shadow and other properties as needed
     shadowColor: "rgba(0, 0, 0, 0.25)",
     shadowOffset: {
       width: 0,
@@ -252,20 +215,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
   },
   dashboardofflineInner: {
-    top: 335,
-    left: 5,
-    backgroundColor: Color.colorGray_200,
-    width: 89,
-    height: 90,
-    position: "absolute",
-    overflow: "hidden",
+    transform: [
+      { translateX: 10 }, // Move 20 pixels to the right
+      { translateY: -70 }, // Move 10 pixels down
+    ],
   },
   dashboardoffline: {
     flex: 1,
-    width: "100%",
-    overflow: "hidden",
-    height: 852,
-    backgroundColor: Color.colorWhite,
+    backgroundColor: Color.colorLightcyan,
+    justifyContent: "center",
+    alignItems: "stretch",
   },
 });
 

@@ -18,34 +18,34 @@ const Dashboard = () => {
         <Image
           style={[styles.raindrop7Icon, styles.iconLayout3]}
           contentFit="cover"
-          source={require("../assets/raindrop-7.png")}
+          source={require("../assets/raindrop.png")}
         />
         <Image
           style={[styles.raindrop8Icon, styles.iconLayout2]}
           contentFit="cover"
-          source={require("../assets/raindrop-8.png")}
+          source={require("../assets/raindrop.png")}
         />
         <Image
           style={[styles.raindrop9Icon, styles.iconLayout]}
           contentFit="cover"
-          source={require("../assets/raindrop-9.png")}
+          source={require("../assets/raindrop.png")}
         />
       </View>
       <View style={[styles.raindrop7Group, styles.uhr3Position]}>
         <Image
           style={[styles.raindrop7Icon, styles.iconLayout3]}
           contentFit="cover"
-          source={require("../assets/raindrop-7.png")}
+          source={require("../assets/raindrop.png")}
         />
         <Image
           style={[styles.raindrop8Icon, styles.iconLayout2]}
           contentFit="cover"
-          source={require("../assets/raindrop-8.png")}
+          source={require("../assets/raindrop.png")}
         />
         <Image
           style={[styles.raindrop9Icon, styles.iconLayout]}
           contentFit="cover"
-          source={require("../assets/raindrop-9.png")}
+          source={require("../assets/raindrop.png")}
         />
       </View>
       <Text style={styles.c}>18°C</Text>
@@ -107,11 +107,6 @@ const Dashboard = () => {
         contentFit="cover"
         source={require("../assets/frame.svg")}
       />
-      <Image
-        style={styles.statusBarIcon}
-        contentFit="cover"
-        source={require("../assets/status-bar.png")}
-      />
       <View style={styles.dashboardInner}>
         <View style={[styles.ellipseParent, styles.groupChildPosition]}>
           <Image
@@ -125,32 +120,32 @@ const Dashboard = () => {
         <Image
           style={[styles.raindrop1Icon, styles.iconLayout3]}
           contentFit="cover"
-          source={require("../assets/raindrop-7.png")}
+          source={require("../assets/raindrop.png")}
         />
         <Image
           style={[styles.raindrop2Icon, styles.iconLayout2]}
           contentFit="cover"
-          source={require("../assets/raindrop-8.png")}
+          source={require("../assets/raindrop.png")}
         />
         <Image
           style={[styles.raindrop3Icon, styles.iconLayout]}
           contentFit="cover"
-          source={require("../assets/raindrop-9.png")}
+          source={require("../assets/raindrop.png")}
         />
         <Image
           style={[styles.raindrop4Icon, styles.iconLayout]}
           contentFit="cover"
-          source={require("../assets/raindrop-9.png")}
+          source={require("../assets/raindrop.png")}
         />
         <Image
           style={[styles.raindrop5Icon, styles.iconLayout]}
           contentFit="cover"
-          source={require("../assets/raindrop-9.png")}
+          source={require("../assets/raindrop.png")}
         />
         <Image
           style={[styles.raindrop6Icon, styles.iconLayout]}
           contentFit="cover"
-          source={require("../assets/raindrop-9.png")}
+          source={require("../assets/raindrop.png")}
         />
       </View>
     </View>
@@ -442,13 +437,6 @@ const styles = StyleSheet.create({
     backgroundColor: Color.colorBlack,
     width: 134,
     height: 5,
-    position: "absolute",
-  },
-  statusBarIcon: {
-    left: 55,
-    width: 302,
-    height: 12,
-    top: 22,
     position: "absolute",
   },
   icon1: {
