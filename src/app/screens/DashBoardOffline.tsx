@@ -20,11 +20,10 @@ type Message = {
 };
 
 const bot_messages = [
-  "Hi John, around noon the wind will pick up. Better to lower the pressure of your pumps on the fields!",
   "Hi Pedro! Urgent weather update: Expect a moderate breeze up to 25 km/h within the next hour. It's best to reschedule today's pesticide spraying to tomorrow for better safety and effectiveness.",
   "Good choice. Note: light rain is forecasted from 22:00-01:00. Please adjust the watering volume to accommodate the expected rainfall.  ",
 ];
-const user_messages = ["Thanks, I'll water field 10 instead."];
+const user_messages = [""];
 const order = ["bot", "bot", "user", "bot"];
 
 const DashboardOffline = () => {
@@ -32,67 +31,62 @@ const DashboardOffline = () => {
   const [messageList, setMessageList] = React.useState<Message[]>([]);
   const scrollViewRef = React.useRef<ScrollView>(null);
 
-  const [startConversation, setStartConversation] = React.useState(false);
+  React.useEffect(() => {
+    // The timeout ID for the first message, so we can clear it when unmounting
+    let firstMessageTimeoutId: NodeJS.Timeout;
 
-  const sendLastBotMessage = () => {
-    if (bot_messages.length > 0) {
-      // We make sure that there is a bot message to send
-      const content = bot_messages.pop() || ""; // Get the last bot message or use an empty string if undefined
-
+    // Function to display the first bot message after 15 seconds
+    firstMessageTimeoutId = setTimeout(() => {
+      const firstBotMessage = bot_messages[0];
       setMessageList((prevMessages) => [
         ...prevMessages,
-        { author: "bot", content },
+        { author: "bot", content: firstBotMessage },
       ]);
-
       scrollToBottom();
+
+      // Function to display the second bot message 5 seconds after the first
+      setTimeout(() => {
+        const secondBotMessage = bot_messages[1];
+        setMessageList((prevMessages) => [
+          ...prevMessages,
+          { author: "bot", content: secondBotMessage },
+        ]);
+        scrollToBottom();
+      }, 10000); // 5 seconds after the first message
+    }, 10000); // 15 seconds after component mounts
+
+    // Cleanup function for the first timeout when the component is unmounted or if the effect re-runs
+    return () => {
+      clearTimeout(firstMessageTimeoutId);
+    };
+  }, []); // The empty array ensures this effect is only run once on component mount
+
+  const handleSendMessage = () => {
+    if (message.trim()) {
+      // Send the user's message
+      const newMessage: Message = { author: "user", content: message };
+      setMessageList((prevMessages) => [...prevMessages, newMessage]);
+      setMessage("");
+      scrollToBottom();
+
+      // If there are remaining bot messages (specifically the third one)
+      if (bot_messages.length >= 3) {
+        // Send the third bot message
+        const botMessageContent = bot_messages[2]; // Assuming index 2 is your third message
+        // Add the bot's message to the message list with a delay of 5 seconds
+        setTimeout(() => {
+          setMessageList((prevMessages) => [
+            ...prevMessages,
+            { author: "bot", content: botMessageContent },
+          ]);
+          scrollToBottom();
+        }, 5000); // Adjust the timeout as necessary
+      }
     }
   };
-
-  React.useEffect(() => {
-    if (startConversation) {
-      let index = 0; // Start from the first message
-      const messageTimer = setInterval(() => {
-        if (index < order.length) {
-          // Explicitly stating the type to match 'Message' type
-          const author: "user" | "bot" = order[index] as "user" | "bot";
-          const content =
-            author === "bot"
-              ? bot_messages.shift() // Get the next bot message
-              : user_messages.shift(); // Get the next user message
-
-          if (content) {
-            setMessageList((prevMessages) => [
-              ...prevMessages,
-              { author, content }, // TypeScript now knows `author` is either 'user' or 'bot'
-            ]);
-            scrollToBottom();
-          }
-
-          index++;
-        } else {
-          clearInterval(messageTimer); // End the interval once all messages have been displayed
-        }
-      }, 5000); // Simulate a delay between messages
-
-      return () => clearInterval(messageTimer); // Clean up on unmount
-    }
-  }, [startConversation]);
 
   const scrollToBottom = () => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
-  };
-
-  const sendMessage = () => {
-    if (message.trim()) {
-      // If message isn't just white space
-      const newMessage: Message = { author: "user", content: message }; // Update the type of newMessage
-      setMessageList([...messageList, newMessage]); // Add the new message to the messageList
-      setMessage(""); // Clear the input after sending the message
-
-      if (scrollViewRef.current) {
-        scrollViewRef.current.scrollToEnd({ animated: true });
-      }
-    }
   };
 
   return (
@@ -108,18 +102,12 @@ const DashboardOffline = () => {
             source={require("../assets/farmtest01-1.png")}
           />
           <View style={[styles.rectangleParent, styles.rectangleParentLayout]}>
-            <Pressable
-              onPress={() => setStartConversation(true)}
-              style={styles.startButton}
-            >
-              <Text>Start Conversation</Text>
-            </Pressable>
             <ScrollView
               ref={scrollViewRef}
               style={styles.messageArea}
               onContentSizeChange={scrollToBottom}
               // Here we set a maxHeight for your ScrollView
-              contentContainerStyle={{ maxHeight: 400 }}
+              contentContainerStyle={{ maxHeight: 450 }}
             >
               {/* Removed extra <View>, not clear on its purpose */}
               {messageList.map((msg, index) => (
@@ -141,11 +129,11 @@ const DashboardOffline = () => {
               placeholder="Hi Farmi ..."
               value={message}
               onChangeText={setMessage}
-              onSubmitEditing={sendMessage} // modified to call sendMessage when you submit the input
+              onSubmitEditing={handleSendMessage} // modified to call sendMessage when you submit the input
             />
             <Pressable
               style={styles.sendButton}
-              onPress={sendMessage} // Use the button to send message
+              onPress={handleSendMessage} // Use the button to send message
             ></Pressable>
           </View>
 
@@ -219,8 +207,8 @@ const styles = StyleSheet.create({
     top: 22,
   },
   frameInner: {
-    top: 202,
-    left: -7,
+    top: 280,
+    left: 2,
     backgroundColor: Color.colorSteelblue,
     width: 370,
     height: 45,
@@ -234,8 +222,8 @@ const styles = StyleSheet.create({
     height: 23,
   },
   hiFarmi: {
-    top: 0,
-    left: 114,
+    top: 50,
+    left: 140,
     color: Color.colorWhite,
     zIndex: 1,
   },
@@ -245,7 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: Color.colorAliceblue_100,
 
     width: "100%",
-    height: 250,
+    height: 280,
     borderRadius: 10,
   },
   text: {
@@ -287,7 +275,7 @@ const styles = StyleSheet.create({
     height: 5,
   },
   icon1: {
-    top: 1,
+    top: 0,
     left: 2,
     width: 83,
     height: 83,
@@ -314,7 +302,7 @@ const styles = StyleSheet.create({
   dashboardofflineInner: {
     transform: [
       { translateX: 10 }, // Move 20 pixels to the right
-      { translateY: -70 }, // Move 10 pixels down
+      { translateY: -90 }, // Move 10 pixels down
     ],
   },
   dashboardoffline: {
@@ -325,11 +313,12 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     padding: 10, // Add padding to increase touchable area
+    zIndex: 1000,
   },
   messageArea: {
     flex: 1,
     padding: 10,
-    height: 400,
+    height: 500,
   },
   messageBubble: {
     borderRadius: 20,
@@ -349,12 +338,15 @@ const styles = StyleSheet.create({
   botBubble: {
     backgroundColor: "#ffffff",
     alignSelf: "flex-start",
+    marginBottom: 10,
   },
   startButton: {
     backgroundColor: "#f0f0f0",
-    padding: 10,
+    padding: 15,
     borderRadius: 5,
     alignSelf: "center",
+    zIndex: 10000,
+    borderWidth: 1,
   },
 });
 
