@@ -19,7 +19,7 @@ messages = [
 ]
 messages.append({
             "role": "user",
-            "content": "Reply with a two sentence response addressed to Pedro. The reply should tell me that today's weather conditions are ideal for plant fertilization due to the low wind speed of light."
+            "content": "Reply with a two sentence response addressed to Pedro. The reply should tell me that today's weather conditions are ideal for plant fertilization due to the low wind speed."
         })
 response = pg.Chat.create(model='Hermes-2-Pro-Mistral-7B',
                           messages=messages)
