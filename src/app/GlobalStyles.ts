@@ -10,7 +10,6 @@ export const FontSize = {
 /* Colors */
 export const Color = {
   colorWhite: "#fff",
-  colorGray_100: "rgba(255, 255, 255, 0.3)",
   colorGray_200: "rgba(255, 255, 255, 0)",
   colorBlack: "#000",
   colorAliceblue_100: "rgba(234, 250, 255, 0.8)",

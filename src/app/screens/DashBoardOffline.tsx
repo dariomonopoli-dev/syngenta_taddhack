@@ -20,67 +20,43 @@ type Message = {
 };
 
 const bot_messages = [
-  "Hi Pedro! Urgent weather update: Expect a moderate breeze up to 25 km/h within the next hour. It's best to reschedule today's pesticide spraying to tomorrow for better safety and effectiveness.",
+  "Hi Pedro! I have an urgent weather update: Expect a moderate breeze up to 25 km/h within the next hour. It's best to reschedule today's pesticide spraying to tomorrow for better safety and effectiveness.",
   "Good choice. Note: light rain is forecasted from 22:00-01:00. Please adjust the watering volume to accommodate the expected rainfall.  ",
 ];
-const user_messages = [""];
-const order = ["bot", "bot", "user", "bot"];
 
 const DashboardOffline = () => {
   const [message, setMessage] = React.useState("");
   const [messageList, setMessageList] = React.useState<Message[]>([]);
   const scrollViewRef = React.useRef<ScrollView>(null);
+  const sendIcon = require("../assets/polygon-1.svg");
 
   React.useEffect(() => {
-    // The timeout ID for the first message, so we can clear it when unmounting
-    let firstMessageTimeoutId: NodeJS.Timeout;
-
-    // Function to display the first bot message after 15 seconds
-    firstMessageTimeoutId = setTimeout(() => {
-      const firstBotMessage = bot_messages[0];
+    const firstBotMessage = bot_messages[0];
+    if (firstBotMessage) {
       setMessageList((prevMessages) => [
         ...prevMessages,
         { author: "bot", content: firstBotMessage },
       ]);
       scrollToBottom();
-
-      // Function to display the second bot message 5 seconds after the first
-      setTimeout(() => {
-        const secondBotMessage = bot_messages[1];
-        setMessageList((prevMessages) => [
-          ...prevMessages,
-          { author: "bot", content: secondBotMessage },
-        ]);
-        scrollToBottom();
-      }, 10000); // 5 seconds after the first message
-    }, 10000); // 15 seconds after component mounts
-
-    // Cleanup function for the first timeout when the component is unmounted or if the effect re-runs
-    return () => {
-      clearTimeout(firstMessageTimeoutId);
-    };
-  }, []); // The empty array ensures this effect is only run once on component mount
+    }
+  }, []);
 
   const handleSendMessage = () => {
     if (message.trim()) {
-      // Send the user's message
-      const newMessage: Message = { author: "user", content: message };
-      setMessageList((prevMessages) => [...prevMessages, newMessage]);
+      const newUserMessage: Message = { author: "user", content: message };
+      setMessageList((prevMessages) => [...prevMessages, newUserMessage]);
       setMessage("");
       scrollToBottom();
 
-      // If there are remaining bot messages (specifically the third one)
-      if (bot_messages.length >= 3) {
-        // Send the third bot message
-        const botMessageContent = bot_messages[2]; // Assuming index 2 is your third message
-        // Add the bot's message to the message list with a delay of 5 seconds
+      const goodIdeaMessage = bot_messages[1];
+      if (goodIdeaMessage) {
         setTimeout(() => {
           setMessageList((prevMessages) => [
             ...prevMessages,
-            { author: "bot", content: botMessageContent },
+            { author: "bot", content: goodIdeaMessage },
           ]);
           scrollToBottom();
-        }, 5000); // Adjust the timeout as necessary
+        }, 5000);
       }
     }
   };
@@ -106,10 +82,8 @@ const DashboardOffline = () => {
               ref={scrollViewRef}
               style={styles.messageArea}
               onContentSizeChange={scrollToBottom}
-              // Here we set a maxHeight for your ScrollView
               contentContainerStyle={{ maxHeight: 450 }}
             >
-              {/* Removed extra <View>, not clear on its purpose */}
               {messageList.map((msg, index) => (
                 <View
                   key={index}
@@ -118,23 +92,22 @@ const DashboardOffline = () => {
                     msg.author === "bot" ? styles.botBubble : styles.userBubble,
                   ]}
                 >
-                  <Text style={styles.messageBubbleText}>{msg.content}</Text>
+                  <Text>{msg.content}</Text>
                 </View>
               ))}
             </ScrollView>
             <View style={styles.frameInner} />
-            {/* TextInput and Send button will stay the same */}
             <TextInput
               style={[styles.hiFarmi, styles.hiFarmiTypo]}
               placeholder="Hi Farmi ..."
               value={message}
               onChangeText={setMessage}
-              onSubmitEditing={handleSendMessage} // modified to call sendMessage when you submit the input
+              onSubmitEditing={handleSendMessage}
+              placeholderTextColor={Color.colorWhite}
             />
-            <Pressable
-              style={styles.sendButton}
-              onPress={handleSendMessage} // Use the button to send message
-            ></Pressable>
+            <Pressable style={styles.sendButton2} onPress={handleSendMessage}>
+              <Image source={sendIcon} style={styles.sendIcon} />
+            </Pressable>
           </View>
 
           <View style={[styles.ellipseParent, styles.rectangleParentLayout]}>
@@ -207,22 +180,23 @@ const styles = StyleSheet.create({
     top: 22,
   },
   frameInner: {
-    top: 280,
+    top: 290,
     left: 2,
     backgroundColor: Color.colorSteelblue,
     width: 370,
     height: 45,
     position: "absolute",
+    borderRadius: Border.br_3xs,
   },
   rectangleView: {
     top: 110,
     left: 104,
-    backgroundColor: Color.colorGray_100,
+    backgroundColor: Color.colorWhite,
     width: 216,
     height: 23,
   },
   hiFarmi: {
-    top: 50,
+    top: 40,
     left: 140,
     color: Color.colorWhite,
     zIndex: 1,
@@ -284,12 +258,9 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     width: 100,
     height: 100,
-    // Make it round
-    borderRadius: 50, // half of the width/height
-    // Center the icon inside the circle
+    borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",
-    // Apply shadow and other properties as needed
     shadowColor: "rgba(0, 0, 0, 0.25)",
     shadowOffset: {
       width: 0,
@@ -300,11 +271,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
   },
   dashboardofflineInner: {
-    transform: [
-      { translateX: 10 }, // Move 20 pixels to the right
-      { translateY: -90 }, // Move 10 pixels down
-    ],
+    transform: [{ translateX: 10 }, { translateY: -100 }],
   },
+  ellipseGroupPoly: {
+    backgroundColor: "white",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "rgba(0, 0, 0, 0.25)",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowRadius: 4,
+    elevation: 4,
+    shadowOpacity: 1,
+    position: "absolute",
+    top: 50,
+  },
+
   dashboardoffline: {
     flex: 1,
     backgroundColor: Color.colorLightcyan,
@@ -312,7 +299,7 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
   },
   sendButton: {
-    padding: 10, // Add padding to increase touchable area
+    padding: 10,
     zIndex: 1000,
   },
   messageArea: {
@@ -326,14 +313,11 @@ const styles = StyleSheet.create({
     marginTop: 5,
     maxWidth: "75%",
   },
-  messageBubbleText: {
-    // This will be the text inside your bubble
-    // You could add different text styling here
-  },
 
   userBubble: {
     backgroundColor: "#DCF8C6",
     alignSelf: "flex-end",
+    marginRight: 10,
   },
   botBubble: {
     backgroundColor: "#ffffff",
@@ -347,6 +331,27 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     zIndex: 10000,
     borderWidth: 1,
+  },
+  sendButton2: {
+    position: "absolute",
+    right: 30,
+    bottom: 5,
+    padding: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+    top: 295,
+    backgroundColor: "#D6F5FF",
+    borderRadius: 50,
+    width: 35,
+  },
+
+  sendIcon: {
+    width: 14,
+    height: 14,
+    resizeMode: "contain",
+    position: "absolute",
+    right: 9,
   },
 });
 
