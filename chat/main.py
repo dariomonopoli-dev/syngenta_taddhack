@@ -4,13 +4,15 @@ import json
 from twilio.rest import Client
 from flask import Flask, request, redirect
 from twilio.twiml.messaging_response import MessagingResponse
+import yaml
 
+with open("../config.yaml", 'r') as file:
+    config = yaml.safe_load(file)
 # Twilio
-account_sid = 'AC44c513e0064a62c9b98                                                                                                                                                          8d66efe1b39ea'
-auth_token = '44ba33f49d167a6ee2d5790628937392'
-
+account_sid = config["twilio_sid"]
+auth_token = config["twilio_token"]
 # PredictionGuard
-os.environ['PREDICTIONGUARD_TOKEN'] = "q1VuOjnffJ3NO2oFN8Q9m8vghYc84ld13jaqdF7E"
+os.environ['PREDICTIONGUARD_TOKEN'] = config['predictionguard_token']
 
 messages = [
     {

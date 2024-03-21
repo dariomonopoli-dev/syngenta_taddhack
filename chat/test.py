@@ -2,8 +2,12 @@ import os
 
 import predictionguard as pg
 import json
+import yaml
 
-os.environ['PREDICTIONGUARD_TOKEN'] = "q1VuOjnffJ3NO2oFN8Q9m8vghYc84ld13jaqdF7E"
+with open("../config.yaml", 'r') as file:
+    config = yaml.safe_load(file)
+
+os.environ['PREDICTIONGUARD_TOKEN'] = config['predictionguard_token']
 
 print(pg.Chat.list_models())
 

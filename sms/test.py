@@ -1,8 +1,13 @@
 from twilio.rest import Client
 from flask import Flask, request, redirect
 from twilio.twiml.messaging_response import MessagingResponse
-account_sid = 'AC44c513e0064a62c9b988d66efe1b39ea'
-auth_token = '44ba33f49d167a6ee2d5790628937392'
+import yaml
+
+with open("../config.yaml", 'r') as file:
+    config = yaml.safe_load(file)
+# Twilio
+account_sid = config["twilio_sid"]
+auth_token = config["twilio_token"]
 
 phone_number = '+41786321632'
 def send_sms(phone_number):
@@ -31,11 +36,6 @@ def sms_reply():
   resp.message("The Robots are coming! Head for the hills!")
 
   return str(resp)
-
-
-
-
-
 
 if __name__ == "__main__":
     # app.run(debug=True)
