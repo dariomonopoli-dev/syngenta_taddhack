@@ -1,83 +1,142 @@
 import * as React from "react";
-import { StyleSheet, View, Pressable, Text } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Pressable,
+  Text,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native";
 import { Image } from "expo-image";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { useNavigation, ParamListBase } from "@react-navigation/native";
 import { Border, FontFamily, FontSize, Color } from "../GlobalStyles";
 
+type Message = {
+  author: "user" | "bot";
+  content: string;
+};
+
+const bot_messages = [
+  "Hi Pedro! I have an urgent weather update: Expect a moderate breeze up to 25 km/h within the next hour. It's best to reschedule today's pesticide spraying to tomorrow for better safety and effectiveness.",
+  "Good choice. Note: light rain is forecasted from 22:00-01:00. Please adjust the watering volume to accommodate the expected rainfall.  ",
+];
+
 const DashboardOffline = () => {
-  const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
+  const [message, setMessage] = React.useState("");
+  const [messageList, setMessageList] = React.useState<Message[]>([]);
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const sendIcon = require("../assets/polygon-1.svg");
+
+  React.useEffect(() => {
+    const firstBotMessage = bot_messages[0];
+    if (firstBotMessage) {
+      setMessageList((prevMessages) => [
+        ...prevMessages,
+        { author: "bot", content: firstBotMessage },
+      ]);
+      scrollToBottom();
+    }
+  }, []);
+
+  const handleSendMessage = () => {
+    if (message.trim()) {
+      const newUserMessage: Message = { author: "user", content: message };
+      setMessageList((prevMessages) => [...prevMessages, newUserMessage]);
+      setMessage("");
+      scrollToBottom();
+
+      const goodIdeaMessage = bot_messages[1];
+      if (goodIdeaMessage) {
+        setTimeout(() => {
+          setMessageList((prevMessages) => [
+            ...prevMessages,
+            { author: "bot", content: goodIdeaMessage },
+          ]);
+          scrollToBottom();
+        }, 5000);
+      }
+    }
+  };
+
+  const scrollToBottom = () => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  };
 
   return (
-    <View style={styles.dashboardoffline}>
-      <Pressable
-        style={[styles.dashboardofflineChild, styles.frameIconLayout]}
-        onPress={() => navigation.navigate("Dashboard")}
-      />
-      <Image
-        style={styles.farmtest011Icon}
-        contentFit="cover"
-        source={require("../assets/farmtest01-1.png")}
-      />
-      <View style={[styles.rectangleParent, styles.rectangleParentLayout]}>
-        <View style={styles.frameChild} />
-        <Image
-          style={styles.frameItem}
-          contentFit="cover"
-          source={require("../assets/vector-1.svg")}
-        />
-        <Text style={[styles.hiJohnAround, styles.hiFarmiTypo]}>
-          Hi John, around noon the wind will pick up. Better to lower the
-          pressure of your pumps on the fields!
-        </Text>
-        <View style={styles.frameInner} />
-        <View style={[styles.rectangleView, styles.rectangleParentLayout]} />
-        <Image
-          style={styles.groupIcon}
-          contentFit="cover"
-          source={require("../assets/group-4.svg")}
-        />
-        <Text style={[styles.hiFarmi, styles.hiFarmiTypo]}>Hi Farmi...</Text>
-      </View>
-      <View style={[styles.ellipseParent, styles.rectangleParentLayout]}>
-        <Text style={[styles.text, styles.textPosition]}>!</Text>
-        <Text style={[styles.offlineUsageFarmiContainer, styles.textTypo]}>
-          <Text style={styles.offlineUsage}>{`Offline Usage `}</Text>
-          <Text style={styles.farmiIsThere}>
-            Farmi is there to help you, ask him anything. Information will be
-            synchronized with your online profile.
-          </Text>
-        </Text>
-      </View>
-      <View style={styles.homeIndicator} />
-      <Image
-        style={styles.frameIconLayout}
-        contentFit="cover"
-        source={require("../assets/frame.svg")}
-      />
-      <Image
-        style={styles.statusBarIcon}
-        contentFit="cover"
-        source={require("../assets/status-bar.png")}
-      />
-      <View style={styles.dashboardofflineInner}>
-        <View style={[styles.ellipseGroup, styles.groupPosition]}>
+    <KeyboardAvoidingView
+      style={styles.dashboardoffline}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.dashboardoffline}>
           <Image
-            style={styles.icon1}
+            style={styles.farmtest011Icon}
             contentFit="cover"
-            source={require("../assets/icon-1.png")}
+            source={require("../assets/farmtest01-1.png")}
           />
+          <View style={[styles.rectangleParent, styles.rectangleParentLayout]}>
+            <ScrollView
+              ref={scrollViewRef}
+              style={styles.messageArea}
+              onContentSizeChange={scrollToBottom}
+              contentContainerStyle={{ maxHeight: 450 }}
+            >
+              {messageList.map((msg, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.messageBubble,
+                    msg.author === "bot" ? styles.botBubble : styles.userBubble,
+                  ]}
+                >
+                  <Text>{msg.content}</Text>
+                </View>
+              ))}
+            </ScrollView>
+            <View style={styles.frameInner} />
+            <TextInput
+              style={[styles.hiFarmi, styles.hiFarmiTypo]}
+              placeholder="Hi Farmi ..."
+              value={message}
+              onChangeText={setMessage}
+              onSubmitEditing={handleSendMessage}
+              placeholderTextColor={Color.colorWhite}
+            />
+            <Pressable style={styles.sendButton2} onPress={handleSendMessage}>
+              <Image source={sendIcon} style={styles.sendIcon} />
+            </Pressable>
+          </View>
+
+          <View style={[styles.ellipseParent, styles.rectangleParentLayout]}>
+            <Text style={[styles.text, styles.textPosition]}>!</Text>
+            <Text style={[styles.offlineUsageFarmiContainer, styles.textTypo]}>
+              <Text style={styles.offlineUsage}>{`Offline Usage `}</Text>
+              <Text style={styles.farmiIsThere}>
+                Farmi is there to help you, ask him anything. Information will
+                be synchronized with your online profile.
+              </Text>
+            </Text>
+          </View>
+          <View style={styles.homeIndicator} />
+          <View style={styles.dashboardofflineInner}>
+            <View style={[styles.ellipseGroup, styles.groupPosition]}>
+              <Image
+                style={styles.icon1}
+                contentFit="cover"
+                source={require("../assets/icon-1.png")}
+              />
+            </View>
+          </View>
         </View>
-      </View>
-    </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  frameIconLayout: {
-    width: 393,
-    height: 852,
-  },
   rectangleParentLayout: {
     borderRadius: Border.br_3xs,
     position: "absolute",
@@ -87,12 +146,10 @@ const styles = StyleSheet.create({
     textAlign: "left",
     fontFamily: FontFamily.imprimaRegular,
     fontSize: FontSize.size_xs,
-    position: "absolute",
   },
   textPosition: {
     top: 12,
     height: 26,
-    position: "absolute",
   },
   textTypo: {
     textAlign: "left",
@@ -103,14 +160,9 @@ const styles = StyleSheet.create({
     width: 87,
     top: 0,
     left: 0,
-    position: "absolute",
   },
   dashboardofflineChild: {
-    top: 57,
     backgroundColor: Color.colorLightcyan,
-    left: 0,
-    width: 393,
-    position: "absolute",
   },
   farmtest011Icon: {
     top: 125,
@@ -119,75 +171,44 @@ const styles = StyleSheet.create({
     height: 232,
     position: "absolute",
   },
-  frameChild: {
-    top: 15,
-    left: 89,
-    borderRadius: Border.br_8xs,
-    width: 261,
-    height: 55,
-    position: "absolute",
-    backgroundColor: Color.colorWhite,
-  },
-  frameItem: {
-    top: 55,
-    left: 79,
-    width: 10,
-    height: 6,
-    position: "absolute",
-  },
+
   hiJohnAround: {
+    right: 10,
     left: 99,
     width: 241,
     color: Color.colorBlack,
     top: 22,
   },
   frameInner: {
-    top: 102,
-    left: -7,
+    top: 290,
+    left: 2,
     backgroundColor: Color.colorSteelblue,
     width: 370,
     height: 45,
     position: "absolute",
+    borderRadius: Border.br_3xs,
   },
   rectangleView: {
     top: 110,
     left: 104,
-    backgroundColor: Color.colorGray_100,
+    backgroundColor: Color.colorWhite,
     width: 216,
     height: 23,
   },
-  groupIcon: {
-    top: 112,
-    left: 76,
-    width: 20,
-    height: 19,
-    position: "absolute",
-  },
   hiFarmi: {
-    top: 115,
-    left: 114,
+    top: 40,
+    left: 140,
     color: Color.colorWhite,
-    width: 75,
-  },
-  ellipseIcon: {
-    top: 109,
-    left: 328,
-    height: 26,
-    width: 26,
-    position: "absolute",
+    zIndex: 1,
   },
   rectangleParent: {
     top: 378,
     left: 15,
     backgroundColor: Color.colorAliceblue_100,
-    width: 363,
-    height: 143,
-    overflow: "hidden",
-  },
-  frameChild1: {
-    left: 21,
-    width: 26,
-    top: 12,
+
+    width: "100%",
+    height: 280,
+    borderRadius: 10,
   },
   text: {
     left: 31,
@@ -211,6 +232,7 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   ellipseParent: {
+    borderRadius: Border.br_3xs,
     top: 84,
     left: 18,
     backgroundColor: "#aec9d1",
@@ -225,23 +247,20 @@ const styles = StyleSheet.create({
     backgroundColor: Color.colorBlack,
     width: 134,
     height: 5,
-    position: "absolute",
-  },
-  statusBarIcon: {
-    left: 55,
-    width: 302,
-    height: 12,
-    top: 22,
-    position: "absolute",
   },
   icon1: {
-    top: 1,
+    top: 0,
     left: 2,
     width: 83,
     height: 83,
-    position: "absolute",
   },
   ellipseGroup: {
+    backgroundColor: "white",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
     shadowColor: "rgba(0, 0, 0, 0.25)",
     shadowOffset: {
       width: 0,
@@ -252,20 +271,87 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
   },
   dashboardofflineInner: {
-    top: 335,
-    left: 5,
-    backgroundColor: Color.colorGray_200,
-    width: 89,
-    height: 90,
-    position: "absolute",
-    overflow: "hidden",
+    transform: [{ translateX: 10 }, { translateY: -100 }],
   },
+  ellipseGroupPoly: {
+    backgroundColor: "white",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "rgba(0, 0, 0, 0.25)",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowRadius: 4,
+    elevation: 4,
+    shadowOpacity: 1,
+    position: "absolute",
+    top: 50,
+  },
+
   dashboardoffline: {
     flex: 1,
-    width: "100%",
-    overflow: "hidden",
-    height: 852,
-    backgroundColor: Color.colorWhite,
+    backgroundColor: Color.colorLightcyan,
+    justifyContent: "center",
+    alignItems: "stretch",
+  },
+  sendButton: {
+    padding: 10,
+    zIndex: 1000,
+  },
+  messageArea: {
+    flex: 1,
+    padding: 10,
+    height: 500,
+  },
+  messageBubble: {
+    borderRadius: 20,
+    padding: 10,
+    marginTop: 5,
+    maxWidth: "75%",
+  },
+
+  userBubble: {
+    backgroundColor: "#DCF8C6",
+    alignSelf: "flex-end",
+    marginRight: 10,
+  },
+  botBubble: {
+    backgroundColor: "#ffffff",
+    alignSelf: "flex-start",
+    marginBottom: 10,
+  },
+  startButton: {
+    backgroundColor: "#f0f0f0",
+    padding: 15,
+    borderRadius: 5,
+    alignSelf: "center",
+    zIndex: 10000,
+    borderWidth: 1,
+  },
+  sendButton2: {
+    position: "absolute",
+    right: 30,
+    bottom: 5,
+    padding: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+    top: 295,
+    backgroundColor: "#D6F5FF",
+    borderRadius: 50,
+    width: 35,
+  },
+
+  sendIcon: {
+    width: 14,
+    height: 14,
+    resizeMode: "contain",
+    position: "absolute",
+    right: 9,
   },
 });
 
