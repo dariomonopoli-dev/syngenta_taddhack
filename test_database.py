@@ -12,7 +12,6 @@ cur = conn.cursor()
 
 cur.execute("SELECT * FROM testproducts")
 
-
 cur.execute("CREATE TABLE test (id serial PRIMARY KEY, num integer, data varchar);")
 conn.commit()
 
