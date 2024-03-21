@@ -1,75 +1,177 @@
 import * as React from "react";
-import { StyleSheet, View, Pressable, Text, TextInput } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Pressable,
+  Text,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native";
 import { Image } from "expo-image";
 import { Border, FontFamily, FontSize, Color } from "../GlobalStyles";
 
+type Message = {
+  author: "user" | "bot";
+  content: string;
+};
+
+const bot_messages = [
+  "Hi John, around noon the wind will pick up. Better to lower the pressure of your pumps on the fields!",
+  "Hi Pedro! Urgent weather update: Expect a moderate breeze up to 25 km/h within the next hour. It's best to reschedule today's pesticide spraying to tomorrow for better safety and effectiveness.",
+  "Good choice. Note: light rain is forecasted from 22:00-01:00. Please adjust the watering volume to accommodate the expected rainfall.  ",
+];
+const user_messages = ["Thanks, I'll water field 10 instead."];
+const order = ["bot", "bot", "user", "bot"];
+
 const DashboardOffline = () => {
   const [message, setMessage] = React.useState("");
+  const [messageList, setMessageList] = React.useState<Message[]>([]);
+  const scrollViewRef = React.useRef<ScrollView>(null);
+
+  const [startConversation, setStartConversation] = React.useState(false);
+
+  const sendLastBotMessage = () => {
+    if (bot_messages.length > 0) {
+      // We make sure that there is a bot message to send
+      const content = bot_messages.pop() || ""; // Get the last bot message or use an empty string if undefined
+
+      setMessageList((prevMessages) => [
+        ...prevMessages,
+        { author: "bot", content },
+      ]);
+
+      scrollToBottom();
+    }
+  };
+
+  React.useEffect(() => {
+    if (startConversation) {
+      let index = 0; // Start from the first message
+      const messageTimer = setInterval(() => {
+        if (index < order.length) {
+          // Explicitly stating the type to match 'Message' type
+          const author: "user" | "bot" = order[index] as "user" | "bot";
+          const content =
+            author === "bot"
+              ? bot_messages.shift() // Get the next bot message
+              : user_messages.shift(); // Get the next user message
+
+          if (content) {
+            setMessageList((prevMessages) => [
+              ...prevMessages,
+              { author, content }, // TypeScript now knows `author` is either 'user' or 'bot'
+            ]);
+            scrollToBottom();
+          }
+
+          index++;
+        } else {
+          clearInterval(messageTimer); // End the interval once all messages have been displayed
+        }
+      }, 5000); // Simulate a delay between messages
+
+      return () => clearInterval(messageTimer); // Clean up on unmount
+    }
+  }, [startConversation]);
+
+  const scrollToBottom = () => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  };
 
   const sendMessage = () => {
     if (message.trim()) {
       // If message isn't just white space
-      console.log("Message sent:", message);
-      // Add the code to send the message or perform any action
+      const newMessage: Message = { author: "user", content: message }; // Update the type of newMessage
+      setMessageList([...messageList, newMessage]); // Add the new message to the messageList
       setMessage(""); // Clear the input after sending the message
+
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollToEnd({ animated: true });
+      }
     }
   };
 
   return (
-    <View style={styles.dashboardoffline}>
-      <Image
-        style={styles.farmtest011Icon}
-        contentFit="cover"
-        source={require("../assets/farmtest01-1.png")}
-      />
-      <View style={[styles.rectangleParent, styles.rectangleParentLayout]}>
-        <View style={styles.frameChild} />
-        <Text style={[styles.hiJohnAround, styles.hiFarmiTypo]}>
-          Hi John, around noon the wind will pick up. Better to lower the
-          pressure of your pumps on the fields!
-        </Text>
-        <View style={styles.frameInner} />
-        <View style={[styles.rectangleView, styles.rectangleParentLayout]} />
-        <TextInput
-          style={[styles.hiFarmi, styles.hiFarmiTypo]} // You may need to adjust styles for TextInput
-          placeholder="Type your message..." // placeholder text
-          value={message} // Controlled value
-          onChangeText={setMessage} // Update state on change
-          onSubmitEditing={sendMessage} // Call sendMessage when the user submits the input
-        />
-        <Pressable
-          style={styles.sendButton}
-          onPress={sendMessage} // Use the button to send message
-        >
+    <KeyboardAvoidingView
+      style={styles.dashboardoffline}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.dashboardoffline}>
           <Image
-            style={styles.polygonIcon}
+            style={styles.farmtest011Icon}
             contentFit="cover"
-            source={require("../assets/polygon-1.png")}
+            source={require("../assets/farmtest01-1.png")}
           />
-        </Pressable>
-      </View>
+          <View style={[styles.rectangleParent, styles.rectangleParentLayout]}>
+            <Pressable
+              onPress={() => setStartConversation(true)}
+              style={styles.startButton}
+            >
+              <Text>Start Conversation</Text>
+            </Pressable>
+            <ScrollView
+              ref={scrollViewRef}
+              style={styles.messageArea}
+              onContentSizeChange={scrollToBottom}
+              // Here we set a maxHeight for your ScrollView
+              contentContainerStyle={{ maxHeight: 400 }}
+            >
+              {/* Removed extra <View>, not clear on its purpose */}
+              {messageList.map((msg, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.messageBubble,
+                    msg.author === "bot" ? styles.botBubble : styles.userBubble,
+                  ]}
+                >
+                  <Text style={styles.messageBubbleText}>{msg.content}</Text>
+                </View>
+              ))}
+            </ScrollView>
+            <View style={styles.frameInner} />
+            {/* TextInput and Send button will stay the same */}
+            <TextInput
+              style={[styles.hiFarmi, styles.hiFarmiTypo]}
+              placeholder="Hi Farmi ..."
+              value={message}
+              onChangeText={setMessage}
+              onSubmitEditing={sendMessage} // modified to call sendMessage when you submit the input
+            />
+            <Pressable
+              style={styles.sendButton}
+              onPress={sendMessage} // Use the button to send message
+            ></Pressable>
+          </View>
 
-      <View style={[styles.ellipseParent, styles.rectangleParentLayout]}>
-        <Text style={[styles.text, styles.textPosition]}>!</Text>
-        <Text style={[styles.offlineUsageFarmiContainer, styles.textTypo]}>
-          <Text style={styles.offlineUsage}>{`Offline Usage `}</Text>
-          <Text style={styles.farmiIsThere}>
-            Farmi is there to help you, ask him anything. Information will be
-            synchronized with your online profile.
-          </Text>
-        </Text>
-      </View>
-      <View style={styles.homeIndicator} />
-      <View style={styles.dashboardofflineInner}>
-        <View style={[styles.ellipseGroup, styles.groupPosition]}>
-          <Image
-            style={styles.icon1}
-            contentFit="cover"
-            source={require("../assets/icon-1.png")}
-          />
+          <View style={[styles.ellipseParent, styles.rectangleParentLayout]}>
+            <Text style={[styles.text, styles.textPosition]}>!</Text>
+            <Text style={[styles.offlineUsageFarmiContainer, styles.textTypo]}>
+              <Text style={styles.offlineUsage}>{`Offline Usage `}</Text>
+              <Text style={styles.farmiIsThere}>
+                Farmi is there to help you, ask him anything. Information will
+                be synchronized with your online profile.
+              </Text>
+            </Text>
+          </View>
+          <View style={styles.homeIndicator} />
+          <View style={styles.dashboardofflineInner}>
+            <View style={[styles.ellipseGroup, styles.groupPosition]}>
+              <Image
+                style={styles.icon1}
+                contentFit="cover"
+                source={require("../assets/icon-1.png")}
+              />
+            </View>
+          </View>
         </View>
-      </View>
-    </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -87,7 +189,6 @@ const styles = StyleSheet.create({
   textPosition: {
     top: 12,
     height: 26,
-    position: "absolute",
   },
   textTypo: {
     textAlign: "left",
@@ -98,7 +199,6 @@ const styles = StyleSheet.create({
     width: 87,
     top: 0,
     left: 0,
-    position: "absolute",
   },
   dashboardofflineChild: {
     backgroundColor: Color.colorLightcyan,
@@ -110,24 +210,7 @@ const styles = StyleSheet.create({
     height: 232,
     position: "absolute",
   },
-  polygonIcon: {
-    top: 125,
-    left: 77,
-    width: 232,
-    height: 232,
-    position: "absolute",
-  },
-  frameChild: {
-    top: 15,
-    left: 89,
-    borderRadius: Border.br_8xs,
-    width: 261,
-    // Increase this height if you expect the text to wrap into multiple lines
-    height: 55,
-    position: "absolute",
-    backgroundColor: Color.colorWhite,
-    padding: 10, // Add some padding to contain the text nicely
-  },
+
   hiJohnAround: {
     right: 10,
     left: 99,
@@ -136,7 +219,7 @@ const styles = StyleSheet.create({
     top: 22,
   },
   frameInner: {
-    top: 102,
+    top: 202,
     left: -7,
     backgroundColor: Color.colorSteelblue,
     width: 370,
@@ -151,7 +234,7 @@ const styles = StyleSheet.create({
     height: 23,
   },
   hiFarmi: {
-    top: 97,
+    top: 0,
     left: 114,
     color: Color.colorWhite,
     zIndex: 1,
@@ -161,8 +244,8 @@ const styles = StyleSheet.create({
     left: 15,
     backgroundColor: Color.colorAliceblue_100,
 
-    width: 363,
-    height: 143,
+    width: "100%",
+    height: 250,
     borderRadius: 10,
   },
   text: {
@@ -202,14 +285,12 @@ const styles = StyleSheet.create({
     backgroundColor: Color.colorBlack,
     width: 134,
     height: 5,
-    position: "absolute",
   },
   icon1: {
     top: 1,
     left: 2,
     width: 83,
     height: 83,
-    position: "absolute",
   },
   ellipseGroup: {
     backgroundColor: "white",
@@ -244,6 +325,36 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     padding: 10, // Add padding to increase touchable area
+  },
+  messageArea: {
+    flex: 1,
+    padding: 10,
+    height: 400,
+  },
+  messageBubble: {
+    borderRadius: 20,
+    padding: 10,
+    marginTop: 5,
+    maxWidth: "75%",
+  },
+  messageBubbleText: {
+    // This will be the text inside your bubble
+    // You could add different text styling here
+  },
+
+  userBubble: {
+    backgroundColor: "#DCF8C6",
+    alignSelf: "flex-end",
+  },
+  botBubble: {
+    backgroundColor: "#ffffff",
+    alignSelf: "flex-start",
+  },
+  startButton: {
+    backgroundColor: "#f0f0f0",
+    padding: 10,
+    borderRadius: 5,
+    alignSelf: "center",
   },
 });
 
