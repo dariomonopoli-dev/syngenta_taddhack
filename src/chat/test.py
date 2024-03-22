@@ -19,10 +19,12 @@ messages = [
 ]
 messages.append({
             "role": "user",
-            "content": "Reply with a two sentence response addressed to Pedro. The reply should tell me that today's weather conditions are ideal for plant fertilization due to the low wind speed of light."
+            "content": "What is the maximum wind velocity for spraying pesticides?",
+            # "content": "Reply with a two sentence response addressed to Pedro. The reply should tell me that today's weather conditions are ideal for plant fertilization due to the low wind speed of light."
         })
 response = pg.Chat.create(model='Hermes-2-Pro-Mistral-7B',
                           messages=messages)
+
 print(response['choices'][0]['message']['content'].split('\n')[0].strip())
 # print(json.dumps(
 #     response,
