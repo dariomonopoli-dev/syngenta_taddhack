@@ -33,7 +33,7 @@ const DashboardOffline = () => {
   React.useEffect(() => {
     const firstBotMessage = bot_messages[0];
     if (firstBotMessage) {
-      setMessageList((prevMessages) => [
+      setMessageList((prevMessages: any) => [
         ...prevMessages,
         { author: "bot", content: firstBotMessage },
       ]);
@@ -41,21 +41,40 @@ const DashboardOffline = () => {
     }
   }, []);
 
+  const FLASK_SERVER_URL = "http://localhost:9000/sms";
+
+  const sendMessageToFlask = async (userMessage: string | number | boolean) => {
+    try {
+      let response = await fetch(FLASK_SERVER_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `Body=${encodeURIComponent(userMessage)}`,
+      });
+      let responseText = await response.text();
+      console.log(responseText); // Here you can handle the response
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const handleSendMessage = () => {
     if (message.trim()) {
       const newUserMessage: Message = { author: "user", content: message };
-      setMessageList((prevMessages) => [...prevMessages, newUserMessage]);
+      setMessageList((prevMessages: any) => [...prevMessages, newUserMessage]);
       setMessage("");
       scrollToBottom();
 
       const goodIdeaMessage = bot_messages[1];
       if (goodIdeaMessage) {
         setTimeout(() => {
-          setMessageList((prevMessages) => [
+          setMessageList((prevMessages: any) => [
             ...prevMessages,
             { author: "bot", content: goodIdeaMessage },
           ]);
           scrollToBottom();
+          sendMessageToFlask(message);
         }, 5000);
       }
     }
@@ -74,7 +93,6 @@ const DashboardOffline = () => {
         <View style={styles.dashboardoffline}>
           <Image
             style={styles.farmtest011Icon}
-            contentFit="cover"
             source={require("../assets/farmtest01-1.png")}
           />
           <View style={[styles.rectangleParent, styles.rectangleParentLayout]}>
