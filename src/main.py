@@ -1,34 +1,57 @@
-from api.CE_Hub_api import get_data
-import pandas as pd
-
+import os
+import predictionguard as pg
+import json
+from twilio.rest import Client
+from flask import Flask, request, redirect
+from twilio.twiml.messaging_response import MessagingResponse
+import yaml
 
 from src.utils.get_api_data import get_api_data
+from src.utils.get_model_preds import get_model_answer
+# from src.utils.get_send_sms import send_sms, get_sms
 
-def main():
-    # Wait for Input, then do something (Without Newsletter)
-    while True:
-        chat_msg = input("Enter a new message: ")
-        # 1.) Retrieve input, decide which action it is (Nothing, Watering, Spraying, Fertilizing)
 
-        # 2.) Get API Data
-        weather_data = get_api_data()
+with open("../config.yaml", 'r') as file:
+    config = yaml.safe_load(file)
+# Twilio
+account_sid = config["twilio_sid"]
+auth_token = config["twilio_token"]
+# PredictionGuard
+os.environ['PREDICTIONGUARD_TOKEN'] = config['predictionguard_token']
 
-        # 3.) Feed API Data into Model and answer the original question with the received data, then send it back
-        # 4.) Repeat
+messages = [
+    {
+        "role": "system",
+        "content": "You are a helpful assistant that provides clever and factual responses."
+    }
+]
+app = Flask(__name__)
 
-        # Model
+@app.route("/")
+def hello():
+  return "Hello World!"
 
-        # Data
-    chat_msg = input("Enter a message: ")
-    # 1.) Retrieve input, decide which action it is (Nothing, Watering, Spraying, Fertilizing)
-    # 2.) Get API Data
-    # 3.) Feed API Data into Model and answer the original question with the received data, then send it back
-    # 4.) Repeat
+@app.route("/sms", methods=['GET', 'POST'])
+def sms_reply():
+    messages.append({
+        "role": "user",
+        "content": "Reply with a two sentence response addressed to Pedro. The reply should tell me that today's weather conditions are ideal for plant fertilization due to the low wind speed of light."
+    })
 
-    # Model
+    """Respond to incoming calls with a simple text message."""
+    # Start our TwiML response
+    resp = MessagingResponse()
 
-    # Data
+    weather_data = get_api_data()
+    prompt_response = get_model_answer(input=resp, context=weather_data)
+
+    # Add a message
+    resp.message(prompt_response)
+
+    return str(resp)
+
+
 
 
 if __name__ == "__main__":
-  main()
+    app.run(debug=True)

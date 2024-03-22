@@ -18,7 +18,7 @@ def get_api_data():
         for col in df_pivot.columns
     ]
 
-    print(df_pivot)
+    # print(df_pivot)
     rain_data = df_pivot["Precip_HourlySum_mm"][0:24] # rain data
     temp_data = df_pivot["TempAir_Hourly_C"][0:24] # temperature data
     wind_data = df_pivot["WindSpeed_Hourly_m_s"][0:24] # wind speed data
