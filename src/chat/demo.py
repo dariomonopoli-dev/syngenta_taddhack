@@ -5,6 +5,7 @@ from twilio.rest import Client
 from flask import Flask, request, redirect
 from twilio.twiml.messaging_response import MessagingResponse
 import yaml
+import time
 
 with open("../../config.yaml", 'r') as file:
     config = yaml.safe_load(file)
@@ -15,27 +16,27 @@ auth_token = config["twilio_token"]
 os.environ['PREDICTIONGUARD_TOKEN'] = config['predictionguard_token']
 
 messages = [
-    {
-        "role": "system",
-        "content": "You are a helpful assistant that provides clever and factual responses."
-    }
+    "Hi Pedro! Urgent weather update: Expect a moderate breeze up to 25 km/h within the next hour. It's best to reschedule today's pesticide spraying to tomorrow for better safety and effectiveness.",
+    "Good choice. Note: light rain is forecasted from 22:00-01:00. Please adjust the watering volume to accommodate the expected rainfall."
 ]
 app = Flask(__name__)
 
 @app.route("/")
 def hello():
-  return "Hello World!"
+    # send_sms("\nHi Pedro! Urgent weather update: Expect a moderate breeze up to 25 km/h within the next hour. It's best to reschedule today's pesticide spraying to tomorrow for better safety and effectiveness.")
+
+    return "Hello World!"
 
 def send_sms(text):
   client = Client(account_sid, auth_token)
 
   message = client.messages.create(
-    # from_='+16064056874',
     from_=config["twilio_phone_number"],
     body=text,
     to=config["phone_number"]
   )
   print("Sent SMS message")
+
 
 @app.route("/sms", methods=['GET', 'POST'])
 def sms_reply():
@@ -54,16 +55,16 @@ def sms_reply():
     resp = MessagingResponse()
 
 
-    response = pg.Chat.create(model='Hermes-2-Pro-Mistral-7B',
-                              messages=messages)['choices'][0]['message']['content'].split('\n')[0].strip()
-
+    # response = pg.Chat.create(model='Hermes-2-Pro-Mistral-7B',
+    #                           messages=messages)['choices'][0]['message']['content'].split('\n')[0].strip()
+    # time.sleep(2)
     # Add a message
-    resp.message(response)
+    resp.message("\nGood choice. Note: light rain is forecasted from 22:00-01:00. Please adjust the watering volume to accommodate the expected rainfall.")
 
     return str(resp)
 
 
-
-
 if __name__ == "__main__":
+    if not os.environ.get("WERKZEUG_RUN_MAIN"):
+        send_sms("\nHi Pedro! Urgent weather update: Expect a moderate breeze up to 25 km/h within the next hour. It's best to reschedule today's pesticide spraying to tomorrow for better safety and effectiveness.")
     app.run(debug=True)
