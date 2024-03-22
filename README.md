@@ -30,7 +30,12 @@ ngrok is a tool that allows you to expose a web server running on your local mac
 
 
 ### Modify (if needed create) a config.yaml file
-1. Include the following parameters: twilio_sid: "your_token", twilio_token: "your_token", predictionguard_token: "q1VuOjnffJ3NO2oFN8Q9m8vghYc84ld13jaqdF7E", phone_number: "your_used_phone_number", twilio_phone_number: "twilio_bought_phone_number"
+1. Include the following parameters:
+```twilio_sid: "your_token"`,
+twilio_token: "your_token",
+predictionguard_token: "q1VuOjnffJ3NO2oFN8Q9m8vghYc84ld13jaqdF7E",
+phone_number: "your_used_phone_number",
+ twilio_phone_number: "twilio_bought_phone_number"```
 
 
 
