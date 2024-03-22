@@ -6,52 +6,71 @@ from flask import Flask, request, redirect
 from twilio.twiml.messaging_response import MessagingResponse
 import yaml
 
-with open("../../config.yaml", 'r') as file:
+with open("../../config.yaml", "r") as file:
     config = yaml.safe_load(file)
 # Twilio
 account_sid = config["twilio_sid"]
 auth_token = config["twilio_token"]
 # PredictionGuard
-os.environ['PREDICTIONGUARD_TOKEN'] = config['predictionguard_token']
+os.environ["PREDICTIONGUARD_TOKEN"] = config["predictionguard_token"]
 
 messages = [
     {
         "role": "system",
-        "content": "You are a helpful assistant that provides clever and factual responses."
+        "content": "You are a helpful assistant that provides clever and factual responses.",
     }
 ]
 app = Flask(__name__)
 
+
 @app.route("/")
 def hello():
-  return "Hello World!"
+    return "Hello World!"
 
-@app.route("/sms", methods=['GET', 'POST'])
+
+def send_sms(text):
+    client = Client(account_sid, auth_token)
+
+    message = client.messages.create(
+        # from_='+16064056874',
+        from_=config["twilio_phone_number"],
+        body=text,
+        to=config["phone_number"],
+    )
+    print("Sent SMS message")
+
+
+@app.route("/sms", methods=["GET", "POST"])
 def sms_reply():
     # TODO: Get username and data from database
     # TODO: Formulate recommendations based on weather data
     # TODO: Formulate prompt
-    messages.append({
-        "role": "user",
-        "content": "Reply with a two sentence response addressed to Pedro. The reply should tell me that today's weather conditions are ideal for plant fertilization due to the low wind speed of light."
-    })
-
+    prompt = request.values.get("Body", None)
+    messages.append({"role": "user", "content": prompt})
 
     """Respond to incoming calls with a simple text message."""
     # Start our TwiML response
     resp = MessagingResponse()
 
-    prompt = request.values.get('Body', None)
-    prompt_response = pg.Completion.create(model='Hermes-2-Pro-Mistral-7B',
-                          prompt=prompt)['choices'][0]['text']
+    response = (
+        pg.Chat.create(model="Hermes-2-Pro-Mistral-7B", messages=messages)["choices"][
+            0
+        ]["message"]["content"]
+        .split("\n")[0]
+        .strip()
+    )
 
     # Add a message
-    resp.message(prompt_response)
+    resp.message(response)
 
     return str(resp)
 
 
+try:
+    if __name__ == "__main__":
+        app.run(debug=True, port=8000)
+except:
+    print("Exception occured!")
+    from werkzeug.serving import run_simple
 
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    run_simple("localhost", 9000, app)

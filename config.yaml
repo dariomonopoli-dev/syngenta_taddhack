@@ -1,3 +1,18 @@
-twilio_sid: 'ACac18a3633f5d70a68593b0db048662bd'
-twilio_token: 'b02f41329f977fb2d7f06b6023d12699'
+twilio_sid: 'AC44c513e0064a62c9b988d66efe1b39ea'
+twilio_token: '44ba33f49d167a6ee2d5790628937392'
 predictionguard_token: 'q1VuOjnffJ3NO2oFN8Q9m8vghYc84ld13jaqdF7E'
+phone_number: '+41786321632'
+twilio_phone_number: '+16064056874'
+profile:
+  - name: "Pedro Almeida"
+    fields:
+      - name: 'Field 14'
+        crop: 'maize'
+        geolocation: '-17.541700, -54.835300'
+        size: '145.76ha'
+
+      - name: 'Field 24'
+        crop: 'tomato'
+        geolocation: '-17.4901, -54.8627'
+        size: '283.95ha'
+

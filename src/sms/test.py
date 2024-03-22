@@ -14,7 +14,6 @@ def send_sms(phone_number):
   client = Client(account_sid, auth_token)
 
   message = client.messages.create(
-    # from_='+16064056874',
     from_='+14434007195',
     body="Test",
     to=phone_number
