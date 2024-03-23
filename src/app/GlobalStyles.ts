@@ -1,13 +1,12 @@
-/* fonts */
 export const FontFamily = {
   imprimaRegular: "Imprima-Regular",
   interSemiBold: "Inter-SemiBold",
 };
-/* font sizes */
+
 export const FontSize = {
   size_xs: 12,
 };
-/* Colors */
+
 export const Color = {
   colorWhite: "#fff",
   colorGray_200: "rgba(255, 255, 255, 0)",
@@ -16,11 +15,11 @@ export const Color = {
   colorSteelblue: "#5b7eb7",
   colorLightcyan: "#d6f5ff",
 };
-/* Paddings */
+
 export const Padding = {
   p_3xs: 10,
 };
-/* border radiuses */
+
 export const Border = {
   br_81xl: 100,
   br_3xs: 10,

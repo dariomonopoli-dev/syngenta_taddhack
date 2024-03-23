@@ -5,7 +5,7 @@ import requests
 import json
 
 weather_source = "Meteoblue"
-api_key = "169294f4-c54f-490e-8124-f74ae00d62e7"
+api_key = "YOUR_API_KEY"
 latitude = "47"
 longitude = "7"
 start_date = "2024-03-20"

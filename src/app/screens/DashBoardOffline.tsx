@@ -53,7 +53,7 @@ const DashboardOffline = () => {
         body: `Body=${encodeURIComponent(userMessage)}`,
       });
       let responseText = await response.text();
-      console.log(responseText); // Here you can handle the response
+      console.log(responseText);
     } catch (error) {
       console.error(error);
     }
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     top: 40,
     left: 140,
     color: Color.colorWhite,
-    zIndex: 1,
+    zIndex: 100,
   },
   rectangleParent: {
     top: 378,
