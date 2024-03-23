@@ -55,3 +55,8 @@ To prevent any network conflicts, disable the AirPlay Receiver on your Mac by go
 1. System Preferences > Sharing.
 2. Uncheck the "AirPlay Receiver" option.
 
+## Demo Showcase
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=kJ0HhKy8cnM
+" target="_blank"><img src="http://img.youtube.com/vi/kJ0HhKy8cnM/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
+
